@@ -1,14 +1,16 @@
 import { createApp, type Component } from 'vue'
 import ElementPlus from 'element-plus'
+import zhCn from 'element-plus/es/locale/lang/zh-cn'
 import 'element-plus/dist/index.css'
 import 'element-plus/theme-chalk/dark/css-vars.css'
 import './style.css'
 import {loadSite} from './site'
+import { initializeTheme, setTheme } from './theme'
 
-export function applyTheme(dark: boolean) { document.documentElement.classList.toggle('dark', dark); localStorage.setItem('nekopass-theme-v3', dark ? 'dark' : 'light'); document.querySelector('meta[name="theme-color"]')?.setAttribute('content', dark ? '#101b2d' : '#eaf2fa') }
+export function applyTheme(dark: boolean) { setTheme(dark ? 'dark' : 'light') }
 export function mount(component: Component, props: Record<string, unknown> = {}) {
- applyTheme(localStorage.getItem('nekopass-theme-v3') !== 'light')
+ initializeTheme()
  window.addEventListener('pageshow', e => { if (e.persisted) location.reload() })
- createApp(component, props).use(ElementPlus).mount('#app')
+ createApp(component, props).use(ElementPlus, { locale: zhCn }).mount('#app')
  void loadSite()
 }

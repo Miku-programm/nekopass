@@ -1,6 +1,10 @@
 <script setup lang="ts">
 defineProps<{ name: string }>()
 const paths: Record<string, string> = {
+ lock: 'M5 10h14v12H5zM8 10V6a4 4 0 0 1 8 0v4M12 15v3', email: 'M3 5h18v14H3zM3 5l9 7 9-7',
+ chevron: 'm9 5 7 7-7 7', message: 'M3 3h18v14H8l-5 4zM7 8h10M7 12h6',
+ gift: 'M3 8h18v4H3zM5 12v10h14V12M12 8v14M12 8H8a3 3 0 1 1 3-3zm0 0h4a3 3 0 1 0-3-3z',
+ notification: 'M4 9h4l12-5v16L8 15H4zM7 15l2 7h4l-2-6', palette: 'M12 3a9 9 0 1 0 0 18h2a2 2 0 0 0 1-4 2 2 0 0 1 1-4h2a3 3 0 0 0 3-3c0-4-5-7-9-7ZM7 8h.01M12 6h.01M17 8h.01M6 13h.01',
  shop:'M4 7h16v14H4zM8 8V6a4 4 0 0 1 8 0v2', wallet:'M3 6h17v15H3zM3 6V3h14v3M15 11h7v5h-7z', orders:'M5 2h14v20l-3-2-4 2-4-2-3 2zM8 7h8M8 12h8M8 16h5',
  settings: 'M12 8a4 4 0 1 0 0 8 4 4 0 1 0 0-8M12 2v3m0 14v3M2 12h3m14 0h3M5 5l2 2m10 10 2 2M5 19l2-2M17 7l2-2',
  home: 'm3 10 9-7 9 7M5 9v12h5v-7h4v7h5V9', user: 'M8 7a4 4 0 1 0 8 0 4 4 0 1 0-8 0M4 22v-3a8 8 0 0 1 16 0v3',
