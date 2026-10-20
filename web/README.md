@@ -49,3 +49,20 @@ npm --prefix web run build
 构建输出位于 `web/dist/`。按仓库根目录 README 的编译、安装流程与 Go 面板一起运行；前端没有附带演示账号或生产用的模拟接口。直接使用 Vite 静态预览不会提供 Cookie 登录、干净 URL 路由或业务 API。
 
 服务端接口以 `api/openapi.yaml` 为准，新增界面功能应沿用 `src/api.ts` 与 `src/page.ts` 的会话、权限和错误处理。
+
+## Vercel 前端演示
+
+演示模式使用浏览器内的合成数据，默认以演示管理员身份浏览。页面标明演示状态；业务写操作不会提交，探针备注、排序等本地偏好仍可操作。此模式适合公开展示 UI，无需 Go 服务、数据库或真实节点。
+
+在仓库根目录构建并部署：
+
+```bash
+npm --prefix web ci
+npm --prefix web run build:demo
+npx vercel login
+npx vercel dist/vercel-demo
+```
+
+`dist/vercel-demo/` 包含静态文件和完整的 Vercel 页面重写配置，可以直接打开 `/node_status`。可将该目录部署到单独的演示项目。Vercel 支持时，也可尝试 `npx vercel dist/vercel-demo --temporary` 发布无需登录的临时演示；服务拒绝匿名部署时需要正常登录。
+
+只有 `--mode demo` 构建会启用演示适配器。正常 `npm --prefix web run build` 输出到 `web/dist/`，仍使用真实 API，且不打包演示数据。不要将演示构建替换为生产面板资源。

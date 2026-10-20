@@ -1,0 +1,45 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": null,
+  "buildCommand": null,
+  "installCommand": null,
+  "outputDirectory": ".",
+  "cleanUrls": false,
+  "trailingSlash": false,
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        { "key": "X-Robots-Tag", "value": "noindex, nofollow" },
+        { "key": "X-Content-Type-Options", "value": "nosniff" },
+        { "key": "Referrer-Policy", "value": "no-referrer" }
+      ]
+    }
+  ],
+  "rewrites": [
+    { "source": "/", "destination": "/pages/home.html" },
+    { "source": "/login", "destination": "/pages/login.html" },
+    { "source": "/register", "destination": "/pages/register.html" },
+    { "source": "/profile", "destination": "/pages/profile.html" },
+    { "source": "/forward_rules", "destination": "/pages/forward_rules.html" },
+    { "source": "/node_status", "destination": "/pages/node_status.html" },
+    { "source": "/shop", "destination": "/pages/shop.html" },
+    { "source": "/orders", "destination": "/pages/orders.html" },
+    { "source": "/tickets", "destination": "/pages/tickets.html" },
+    { "source": "/referrals", "destination": "/pages/referrals.html" },
+    { "source": "/admin", "destination": "/pages/admin.html" },
+    { "source": "/admin/users", "destination": "/pages/admin_users.html" },
+    { "source": "/admin/users/:id/forward_rules", "destination": "/pages/admin_user_rules.html" },
+    { "source": "/admin/plans", "destination": "/pages/admin_plans.html" },
+    { "source": "/admin/nodes", "destination": "/pages/admin_nodes.html" },
+    { "source": "/admin/nodes/:id/ddns", "destination": "/pages/admin_node_ddns.html" },
+    { "source": "/admin/nodes/:id/ip-recovery", "destination": "/pages/admin_node_ip_recovery.html" },
+    { "source": "/admin/nodes/:id/protocols", "destination": "/pages/admin_node_protocols.html" },
+    { "source": "/admin/node_groups", "destination": "/pages/admin_node_groups.html" },
+    { "source": "/admin/settings", "destination": "/pages/admin_settings.html" },
+    { "source": "/admin/announcements", "destination": "/pages/admin_announcements.html" },
+    { "source": "/admin/orders", "destination": "/pages/admin_orders.html" },
+    { "source": "/admin/tickets", "destination": "/pages/admin_tickets.html" },
+    { "source": "/admin/payment_gateways", "destination": "/pages/admin_payment_gateways.html" }
+  ]
+}

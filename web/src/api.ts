@@ -1,3 +1,4 @@
+/// <reference types="vite/client" />
 export type OriginTLS={enabled:boolean;server_name:string;root_ca:string;alpn:string[]}
 export type SharedTLSConfig={name:string;port:number;enabled:boolean;proxy_accept:string;allowed_sni:string[];reject_empty_sni:boolean;unknown_sni_action:string;default_rule_id:number;max_handshakes:number;handshake_timeout_seconds:number}
 export type TLSInboundChoice={id:number;node_id:number;port:number;name:string;allowed_sni:string[]}
@@ -16,6 +17,10 @@ export type RuleInput = { tls_inbound_id?:number;sni_names?:string[];tls_alpn?:s
 export type Rule = RuleInput & { egress_node_name: string; egress_tunnel_protocol?: string; id: number; username: string; node_name: string; public_address: string; traffic_bytes: number; status: string; sync_error: string; group_name: string; last_seen: string | null; applied_revision: number }
 export type Group = { id: number; user_id: number; name: string; rule_count: number }
 export async function api<T>(path: string, method = 'GET', body?: unknown): Promise<T> {
+  if (import.meta.env.VITE_DEMO_MODE === 'true') {
+    const { demoAPI } = await import('./demo/adapter')
+    return demoAPI<T>(path, method, body)
+  }
   const r = await fetch(`/api/v1/${path}`, { method, credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: body === undefined ? undefined : JSON.stringify(body) })
   const data = await r.json()
   if (!r.ok) {
