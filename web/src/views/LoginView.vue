@@ -3,8 +3,8 @@ import { onMounted, reactive, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import { api, type Me } from '../api'
 import { safeReturnPath } from '../page'
-import {site} from '../site'
-import BrandLogo from '../BrandLogo.vue'
+import AuthShell from '../AuthShell.vue'
+import Icon from '../Icon.vue'
 const form = reactive({username:new URLSearchParams(location.search).get('email')||'',password:''}), busy = ref(false),registrationEnabled=ref(false)
 onMounted(async()=>{try{registrationEnabled.value=(await api<{enabled:boolean}>('registration')).enabled}catch{/* registration unavailable */}})
 async function login() {
@@ -19,4 +19,12 @@ async function login() {
  } catch(e) { ElMessage.error((e as Error).message) } finally { busy.value=false }
 }
 </script>
-<template><main class="login-page"><section class="login-card surface"><BrandLogo size="large" /><h1>{{site.name}}</h1><p class="subtle">登录控制台</p><el-form label-position="top" @submit.prevent="login"><el-form-item label="用户名"><el-input v-model="form.username" autocomplete="username" /></el-form-item><el-form-item label="密码"><el-input v-model="form.password" type="password" show-password autocomplete="current-password" /></el-form-item><el-button type="primary" native-type="submit" :loading="busy" class="full">登录</el-button></el-form><p v-if="registrationEnabled" class="field-tip"><a class="text-link" href="/register">注册账号</a></p></section></main></template>
+<template>
+ <AuthShell title="登录">
+  <el-form class="auth-form" @submit.prevent="login">
+   <el-form-item><el-input v-model="form.username" aria-label="用户名" placeholder="用户名" autocomplete="username"><template #prefix><Icon name="user" /></template></el-input></el-form-item>
+   <el-form-item><el-input v-model="form.password" aria-label="密码" placeholder="密码" type="password" show-password autocomplete="current-password"><template #prefix><Icon name="lock" /></template></el-input></el-form-item>
+   <div class="auth-actions"><el-button type="primary" native-type="submit" :loading="busy">登录</el-button><a v-if="registrationEnabled" class="text-link" href="/register">前往注册</a></div>
+  </el-form>
+ </AuthShell>
+</template>

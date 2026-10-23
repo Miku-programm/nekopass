@@ -1,3 +1,4 @@
+/// <reference types="vite/client" />
 export type RuleBatchPatch={node_id?:number;egress_node_id?:number;egress_group_id?:number;balance?:string;proxy_accept_enabled?:boolean;proxy_send_enabled?:boolean}
 export type OriginTLS={enabled:boolean;server_name:string;root_ca:string;alpn:string[]}
 export type SharedTLSConfig={name:string;port:number;enabled:boolean;proxy_accept:string;allowed_sni:string[];reject_empty_sni:boolean;unknown_sni_action:string;default_rule_id:number;max_handshakes:number;handshake_timeout_seconds:number}
@@ -22,6 +23,10 @@ export class APIError extends Error {
   constructor(message:string,readonly status:number,readonly code:string=''){super(message);this.name='APIError'}
 }
 export async function api<T>(path: string, method = 'GET', body?: unknown): Promise<T> {
+  if (import.meta.env.VITE_DEMO_MODE === 'true') {
+    const { demoAPI } = await import('./demo/adapter')
+    return demoAPI<T>(path, method, body)
+  }
   const r = await fetch(`/api/v1/${path}`, { method, credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: body === undefined ? undefined : JSON.stringify(body) })
   const data = await r.json()
   if (!r.ok) {
