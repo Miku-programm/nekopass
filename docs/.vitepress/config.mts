@@ -4,7 +4,7 @@ const base = process.env.VITEPRESS_BASE || '/'
 if (!base.startsWith('/') || !base.endsWith('/') || /[?#\\]/.test(base)) {
   throw new Error('VITEPRESS_BASE must be a path starting and ending with /')
 }
-const repository = process.env.GITHUB_REPOSITORY
+const repository = process.env.GITHUB_REPOSITORY || 'Alma0010/nekopass'
 
 export default defineConfig({
   lang: 'zh-CN',
@@ -47,7 +47,8 @@ export default defineConfig({
           { text: 'UDP 转发', link: '/protocols/udp' },
           { text: 'raw(tcp)', link: '/protocols/plain-tcp' },
           { text: 'raw(udp)', link: '/protocols/raw-udp' },
-          { text: 'h2', link: '/protocols/h2' }
+          { text: 'h2', link: '/protocols/h2' },
+          { text: 'HTTP/3', link: '/protocols/h3' }
         ]
       },
       {
@@ -56,6 +57,7 @@ export default defineConfig({
           { text: '安全性选择', link: '/security/' },
           { text: '不加密', link: '/security/none' },
           { text: 'TLS', link: '/security/tls' },
+          { text: '全随机加密', link: '/security/random' },
           { text: 'TLS 入站 / SNI 分流', link: '/security/tls-inbound' }
         ]
       },
@@ -81,6 +83,7 @@ export default defineConfig({
           { text: 'Telegram Bot', link: '/guide/telegram' },
           { text: '转发安全', link: '/guide/security' },
           { text: '日常管理', link: '/guide/manage' },
+          { text: '发布与文档部署', link: '/guide/publishing' },
           { text: '反向代理', link: '/guide/proxy' },
           { text: '常见问题', link: '/guide/troubleshooting' }
         ]

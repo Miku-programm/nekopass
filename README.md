@@ -26,7 +26,7 @@ Nekopass是一个开源免费的转发面板，设计参考了nyanpass，但是�
 
 - 开源免费，采用 GPL-3.0 许可证。
 - 支持 TCP、UDP 分别创建规则，提供直转与隧道中转。
-- raw(tcp)、h2、raw(udp) 均可搭配明文或 TLS。
+- raw(tcp)、h2、raw(udp) 均可搭配明文、TLS 或全随机加密（ChaCha20-Poly1305 / AES-256-GCM）；HTTP/3 固定 TLS，支持 TCP / UDP 与 Fallback 网站。
 - TLS 入站支持多用户共用端口，按 SNI 分流，透传客户端与目标之间的 TLS 连接。
 - uTLS模拟指纹，支持 Chrome、Firefox 等握手指纹。
 - 基于h2的加密隧道，以及未认证访问的伪装网站fallback回退(防止主动探测)。
@@ -52,7 +52,7 @@ Nekopass是一个开源免费的转发面板，设计参考了nyanpass，但是�
 Debian / Ubuntu，amd64 / arm64：
 
 ```bash
-wget https://github.com/hajidishu/nekopass/releases/latest/download/install-panel.sh -O install-panel.sh && sudo bash install-panel.sh
+wget https://github.com/Alma0010/nekopass/releases/latest/download/install-panel.sh -O install-panel.sh && sudo bash install-panel.sh
 ```
 
 安装完成显示管理员账号和随机密码。网页默认 `8080`，节点控制端口 `9443`；网页 HTTPS 自行配置 Nginx。
@@ -61,7 +61,18 @@ wget https://github.com/hajidishu/nekopass/releases/latest/download/install-pane
 
 ## 安装节点
 
-在后台「节点管理」复制安装命令，到节点服务器以 root 执行。
+在后台「节点管理」复制安装命令，到节点服务器以 root 执行。安装、升级及卸载的完整步骤见 [安装节点](docs/guide/node.md)。
+
+## 卸载节点
+
+默认完整卸载本机全部节点（含独立命名的节点）、配置、状态数据、更新服务和专用账户，保留面板及数据库。只卸载一个节点时指定服务名。
+
+```bash
+wget https://github.com/Alma0010/nekopass/releases/latest/download/uninstall-agent.sh -O uninstall-agent.sh && sudo bash uninstall-agent.sh
+wget https://github.com/Alma0010/nekopass/releases/latest/download/uninstall-agent.sh -O uninstall-agent.sh && sudo bash uninstall-agent.sh --service-name nekopass-agent-hk1
+```
+
+以上命令依次为完整卸载、卸载指定节点，按需选择一条执行。需要先发布包含 `uninstall-agent.sh` 的正式 Release。卸载不会自动删除面板中的节点记录。
 
 ## 服务管理
 
@@ -87,7 +98,7 @@ sudo nekopassctl panel reset-password # 重置管理员密码
 
 很显然readme.md放不下这么多字，所以我们创建了一个文档站，你可以在这里了解如何使用此软件
 
-https://hajidishu.github.io/nekopass/
+https://Alma0010.github.io/nekopass/
 
 >文档由ai总结，目前缺少人工润色，但是不影响你查看
 
@@ -111,7 +122,11 @@ pwsh -File scripts/package-panel.ps1  # 面板和节点完整发布包
 pwsh -File scripts/package-agent.ps1  # 仅节点发布文件
 ```
 
-产物位于 `dist/oss/nekopass/`，可用 `-Version v0.19.1` 指定版本号。
+产物位于 `dist/oss/nekopass/`，可用 `-Version v0.19.3` 指定版本号。
+
+## 发布 Releases 与 GitHub Pages
+
+本仓库已包含自动打包发布和文档部署工作流。首次启用、发布版本和更新文档的完整操作见 [发布与文档部署](docs/guide/publishing.md)。
 
 ## 如何贡献？
 

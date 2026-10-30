@@ -47,7 +47,7 @@ func TestWeightedUsageSeparatesQuotaAndRawAndKeepsFreeRules(t *testing.T) {
 	}
 	directRule, paidRule, groupRule := makeRule(0, 0), makeRule(paid, 0), makeRule(0, group)
 	stream := &StreamServer{Server: f.s}
-	report := &pb.AgentMessage{ProtocolVersion: 25, InstanceId: Secret(), RequestUsers: []int64{f.user}}
+	report := &pb.AgentMessage{ProtocolVersion: pb.CurrentVersion, InstanceId: Secret(), RequestUsers: []int64{f.user}}
 	config, err := stream.exchange(ctx, f.p, entry, report)
 	if err != nil {
 		t.Fatal(err)
@@ -96,16 +96,18 @@ func TestWeightedUsageSeparatesQuotaAndRawAndKeepsFreeRules(t *testing.T) {
 		t.Fatal("charge regressed")
 	}
 	report.Usage = nil
-	report.ProtocolVersion = 24
-	if _, err = stream.exchange(ctx, f.p, entry, report); err == nil {
-		t.Fatal("old agent accepted non-legacy billing state")
+	for _, version := range []int32{24, 25} {
+		report.ProtocolVersion = version
+		if _, err = stream.exchange(ctx, f.p, entry, report); err == nil {
+			t.Fatal("old agent accepted non-legacy billing state", version)
+		}
 	}
 	// Rates are combined on the controller before being sent to the entry;
 	// each group member retains its individual egress component.
 	f.p.Exec(ctx, "UPDATE users SET quota_bytes=-1 WHERE id=$1", f.user)
 	f.p.Exec(ctx, "UPDATE nodes SET ingress_rate=12500 WHERE id=$1", entry)
 	f.p.Exec(ctx, "UPDATE nodes SET egress_rate=7500 WHERE id=$1", paid)
-	report.ProtocolVersion = 25
+	report.ProtocolVersion = pb.CurrentVersion
 	config, err = stream.exchange(ctx, f.p, entry, report)
 	if err != nil {
 		t.Fatal(err)

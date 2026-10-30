@@ -14,14 +14,14 @@ func TestEgressGroupAuthorizationDistributionAndBatch(t *testing.T) {
 	f := newSecurityFixture(t)
 	ctx := context.Background()
 	var entry int64
-	if err := f.p.QueryRow(ctx, `INSERT INTO nodes(name,token_hash,protocol_version) VALUES($1,$2,24) RETURNING id`, Secret(), Secret()).Scan(&entry); err != nil {
+	if err := f.p.QueryRow(ctx, `INSERT INTO nodes(name,token_hash,protocol_version) VALUES($1,$2,25) RETURNING id`, Secret(), Secret()).Scan(&entry); err != nil {
 		t.Fatal(err)
 	}
 	testAuthorize(t, f.p, f.user, entry)
 	var exits []int64
 	for i := 0; i < 3; i++ {
 		var id int64
-		if err := f.p.QueryRow(ctx, `INSERT INTO nodes(name,token_hash,tunnel_exit_enabled,tunnel_public_host,tunnel_listen_port,protocol_version) VALUES($1,$2,true,'exit.example.test',24443,24) RETURNING id`, Secret(), Secret()).Scan(&id); err != nil {
+		if err := f.p.QueryRow(ctx, `INSERT INTO nodes(name,token_hash,tunnel_exit_enabled,tunnel_public_host,tunnel_listen_port,protocol_version) VALUES($1,$2,true,'exit.example.test',24443,25) RETURNING id`, Secret(), Secret()).Scan(&id); err != nil {
 			t.Fatal(err)
 		}
 		exits = append(exits, id)
@@ -87,7 +87,7 @@ func TestEgressGroupAuthorizationDistributionAndBatch(t *testing.T) {
 		return c
 	}
 	for i, id := range exits {
-		c := exchange(id, 24)
+		c := exchange(id, 25)
 		want := 1
 		if i == 2 {
 			want = 0
@@ -96,11 +96,11 @@ func TestEgressGroupAuthorizationDistributionAndBatch(t *testing.T) {
 			t.Fatalf("exit %d grants %d want %d", i, len(c.EgressRules), want)
 		}
 	}
-	c := exchange(entry, 24)
+	c := exchange(entry, 25)
 	if len(c.Rules) != 1 || c.Rules[0].Id != rid || !c.Rules[0].Enabled || len(c.Rules[0].EgressPeers) != 2 || c.Rules[0].EgressStrategy != "round_robin" || c.Rules[0].EgressPeers[0].Weight != 2 || !c.Rules[0].EgressPeers[1].Standby {
 		t.Fatal("group candidates/policy not distributed", c.Rules)
 	}
-	if len(exchange(entry, 23).Rules) != 1 || exchange(entry, 23).Rules[0].Enabled {
+	if len(exchange(entry, 24).Rules) != 1 || exchange(entry, 24).Rules[0].Enabled {
 		t.Fatal("old entry received an active group rule")
 	}
 	// Re-selecting a group in a batch must clear the previous single-node exit.
@@ -123,18 +123,32 @@ func TestEgressGroupAuthorizationDistributionAndBatch(t *testing.T) {
 	}
 	// Removing ingress permission revokes the affected exit only.
 	f.p.Exec(ctx, "DELETE FROM node_tunnel_links WHERE ingress_node_id=$1 AND egress_node_id=$2", entry, exits[0])
-	c = exchange(entry, 24)
+	c = exchange(entry, 25)
 	if len(c.Rules[0].EgressPeers) != 1 || !c.Rules[0].EgressPeers[0].Standby {
 		t.Fatal("revoked candidate still delivered")
 	}
-	if len(exchange(exits[0], 24).EgressRules) != 0 {
+	if len(exchange(exits[0], 25).EgressRules) != 0 {
 		t.Fatal("revoked exit grant still delivered")
 	}
 	securityStatus(t, f.request(f.admin, fmt.Sprintf("admin/node-groups/%d", gid), "DELETE", nil), 409)
 	// Losing the explicit group grant cannot retain access through another group.
 	f.p.Exec(ctx, "DELETE FROM user_node_groups WHERE user_id=$1 AND group_id=$2", f.user, gid)
-	c = exchange(entry, 24)
+	c = exchange(entry, 25)
 	if c.Rules[0].Enabled || len(c.Rules[0].EgressPeers) != 0 {
 		t.Fatal("group grant revocation bypassed")
+	}
+}
+
+func TestGroupFinalSnapshotReleasesDraftReferences(t *testing.T) {
+	r := &pb.Rule{Id: 1, EgressGroupId: 3, Enabled: true}
+	p := &pb.Rule{Id: 1, EgressNodeId: 4, Enabled: true, Targets: []string{"draft-only-target"}}
+	backing := []*pb.Rule{r, p}
+	out := &pb.ControlMessage{Rules: backing}
+	finishGroupDrafts(out, []groupRuleDraft{{rule: r, peer: p, weight: 1}}, 25, 1)
+	if len(out.Rules) != 1 || len(out.Rules[0].EgressPeers) != 1 || out.Rules[0].EgressPeers[0].NodeId != 4 {
+		t.Fatal("group route changed")
+	}
+	if backing[1] != nil || cap(out.Rules) > 1 {
+		t.Fatal("snapshot retains temporary candidate rules")
 	}
 }

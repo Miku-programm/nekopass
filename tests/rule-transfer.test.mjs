@@ -102,3 +102,35 @@ test('SNI passthrough rules require full backup and survive native import', () =
   assert.deepEqual(imported.sni_names,['app.example.com'])
   assert.deepEqual(imported.origin_tls,rule.origin_tls)
 })
+
+
+test('group imports retain one binding and full backups preserve it', () => {
+  const [rule]=prepareRuleImport(parseRuleImport(JSON.stringify(example)),{...destination,nodeID:0,ingressGroupID:42})
+  assert.equal(rule.node_id,0)
+  assert.equal(rule.ingress_group_id,42)
+  const [restored]=prepareRuleImport(parseRuleImport(JSON.stringify({rules:[rule]})),{...destination,userID:9})
+  assert.equal(restored.ingress_group_id,42)
+  assert.equal(restored.node_id,0)
+  assert.equal(restored.user_id,9)
+  const compatible=JSON.parse(encodeNyanpassRules([rule]).trim())
+  assert.equal(compatible.ingress_group_id,undefined)
+  assert.deepEqual(compatible.dest,rule.targets)
+  assert.equal(compatible.listen_port,rule.listen_port)
+})
+
+
+test('nyanpass destination policies round-trip using round and least_load, default omitted',()=>{
+ for(const [policy,balance] of [[undefined,'random'],['round','round_robin'],['least_load','least_connections']]){
+  const data=parseRuleImport(JSON.stringify({name:'policy',dest:['example.com:443'],listen_port:24000,...(policy?{dest_policy:policy}:{})}))
+  const [rule]=prepareRuleImport(data,{userID:2,nodeID:1,egressNodeID:0,groupID:0,randomPorts:false,trustedCIDRs:[]})
+  assert.equal(rule.balance,balance)
+  const exported=JSON.parse(encodeNyanpassRules([rule]).trim())
+  assert.equal(exported.dest_policy,policy)
+  if(!policy)assert.equal(Object.hasOwn(exported,'dest_policy'),false)
+ }
+ assert.throws(()=>parseRuleImport(JSON.stringify({name:'unknown',dest:['example.com:443'],listen_port:24000,dest_policy:'unknown'})),/dest_policy/)
+})
+test('official legacy name#port#target#target-port lines can import',()=>{
+ const data=parseRuleImport('first#24000#example.com#443\nsecond##2001:db8::1#80')
+ assert.deepEqual(data.rules.map(r=>[r.listen_port,r.dest]),[[24000,['example.com:443']],[0,['[2001:db8::1]:80']]])
+})

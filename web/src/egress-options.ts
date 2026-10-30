@@ -18,3 +18,11 @@ export function egressChoices(nodes:RuleNode[],groups:RuleEgressGroup[],ingress:
   }),
  ]
 }
+
+export function commonEgressChoices(nodes:RuleNode[],groups:RuleEgressGroup[],ingresses:{id:number;allow_direct:boolean}[],protocol:string):EgressOption[]{
+ if(!ingresses.length)return []
+ const choices=ingresses.map(i=>egressChoices(nodes,groups,i.id,protocol))
+ const result=choices[0]!.filter(o=>o.kind!=='direct'&&choices.every(c=>c.some(v=>v.value===o.value)))
+ if(ingresses.every(i=>i.allow_direct))result.unshift({value:'node:0',name:'#0 不使用隧道，直接转发',kind:'direct'})
+ return result
+}

@@ -48,7 +48,7 @@ func appendMeteringControl(ctx context.Context, tx pgx.Tx, node int64, version i
 		users[u.Id] = u
 		ids = append(ids, u.Id)
 	}
-	if version >= 25 {
+	if version >= 26 {
 		rows, err = tx.Query(ctx, `SELECT u.id,u.enabled,(u.quota_bytes>=0 AND (u.traffic_base_bytes>=u.quota_bytes OR u.traffic_base_bytes+COALESCE((SELECT sum(charged_bytes) FROM current_grants WHERE user_id=u.id),0)>=u.quota_bytes OR u.traffic_base_bytes+COALESCE((SELECT sum(issued-released+unlimited_spent) FROM current_grants WHERE user_id=u.id),0)>u.quota_bytes)) FROM user_entitlements u WHERE u.id=ANY($1::bigint[])`, ids)
 		if err != nil {
 			return err
@@ -90,7 +90,7 @@ func appendMeteringControl(ctx context.Context, tx pgx.Tx, node int64, version i
 					continue
 				}
 				p.TrafficRate = values[node].ingress + values[p.NodeId].egress
-				if version < 25 && p.TrafficRate != billing.Scale || blocked && p.TrafficRate > 0 {
+				if version < 26 && p.TrafficRate != billing.Scale || blocked && p.TrafficRate > 0 {
 					continue
 				}
 				peers = append(peers, p)
@@ -99,7 +99,7 @@ func appendMeteringControl(ctx context.Context, tx pgx.Tx, node int64, version i
 			if len(peers) == 0 {
 				r.Enabled = false
 			}
-		} else if version < 25 && r.TrafficRate != billing.Scale || blocked && r.TrafficRate > 0 {
+		} else if version < 26 && r.TrafficRate != billing.Scale || blocked && r.TrafficRate > 0 {
 			r.Enabled = false
 		}
 	}

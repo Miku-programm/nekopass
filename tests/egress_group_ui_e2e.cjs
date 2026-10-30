@@ -42,7 +42,7 @@ const group={id:20,name:'多出口节点组',description:'',enabled:true,sort_or
   await page.goto(base+'/forward_rules');
   await page.getByRole('button',{name:'添加规则',exact:true}).click();
   let dlg=page.getByRole('dialog',{name:'添加规则',exact:true});
-  await select(dlg,'入口','入口节点');
+  await dlg.locator('.el-radio-button').filter({hasText:'单节点'}).click();await select(dlg,'入口','入口节点');
   await field(dlg,'出口').locator('.el-select').click();
   const single=page.getByRole('option',{name:'单个出口',exact:true});
   const grouped=page.getByRole('option',{name:'多出口节点组',exact:true});
@@ -56,7 +56,7 @@ const group={id:20,name:'多出口节点组',description:'',enabled:true,sort_or
   assert.equal(writes.at(-1).api,'rules');assert.equal(writes.at(-1).body.egress_node_id,0);assert.equal(writes.at(-1).body.egress_group_id,20);
   // A node and a group with the same numeric ID must remain distinguishable.
   await page.getByRole('button',{name:'添加规则',exact:true}).click();dlg=page.getByRole('dialog',{name:'添加规则',exact:true});
-  await select(dlg,'入口','入口节点');await select(dlg,'出口','单个出口');
+  await dlg.locator('.el-radio-button').filter({hasText:'单节点'}).click();await select(dlg,'入口','入口节点');await select(dlg,'出口','单个出口');
   await field(dlg,'目标地址').locator('textarea').fill('target.example.test:443');await dlg.getByRole('button',{name:'确定',exact:true}).click();await dlg.waitFor({state:'hidden'});
   assert.equal(writes.at(-1).body.egress_node_id,20);assert.equal(writes.at(-1).body.egress_group_id,0);
   admin=true;await page.goto(base+'/admin/node_groups');

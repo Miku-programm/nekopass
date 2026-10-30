@@ -10,8 +10,8 @@ write_updater_payload() { return 1; }
 # PACKAGED_UPDATER
 
 SERVER=''; TOKEN=''; TOKEN_FILE=''; PANEL_URL=''; INSTALL_TOKEN=''
-DOWNLOAD_BASE='https://github.com/hajidishu/nekopass/releases/download'
-VERSION='v0.19.1'; ARCH='auto'; BINARY_URL=''
+DOWNLOAD_BASE='https://github.com/Alma0010/nekopass/releases/download'
+VERSION='v0.19.4'; ARCH='auto'; BINARY_URL=''
 SERVICE='nekopass-agent'
 NO_START=0; DRY_RUN=0; WORK=''; CHANGED=0; WAS_ACTIVE=0; WAS_ENABLED=0; STATE_BACKUP=''; RESET_STATE=0
 usage() {
@@ -20,7 +20,7 @@ Nekopass Agent installer (Linux + systemd, run as root)
 
 Direct mode:
   bash install-agent.sh -s https://panel.example.com:9443 -t NODE_TOKEN \
-    -d https://github.com/hajidishu/nekopass/releases/download -v v0.19.1
+    -d https://github.com/Alma0010/nekopass/releases/download -v v0.19.4
 
 Legacy installation credential (compatibility only):
   bash install-agent.sh -p https://panel.example.com -i INSTALL_TOKEN
@@ -31,7 +31,7 @@ Legacy installation credential (compatibility only):
   -p, --panel-url URL          Legacy install-token API root; unused with --server/--token
   -i, --install-token TOKEN    One-time node-specific installation credential
   -d, --download-base URL      HTTPS release directory
-  -v, --version VERSION        Release directory name; default v0.19.1
+  -v, --version VERSION        Release directory name; default v0.19.4
   -a, --arch ARCH              auto, amd64 or arm64
       --binary-url URL        Override architecture binary download URL
       --service-name NAME     Default nekopass-agent; isolated suffix allowed
@@ -97,7 +97,7 @@ ENV_FILE="$CONFIG_DIR/agent.env"; STATE_DIR="/var/lib/$SERVICE"; UNIT="/etc/syst
 for target in "$(dirname "$BIN")" "$CONFIG_DIR" "$STATE_DIR" /etc/systemd/system; do
  [[ "$(realpath -m "$target")" == "$target" ]] || die "Refusing symlinked installation directory: $target"
 done
-for target in "$BIN" "$ENV_FILE" "$UNIT"; do [[ ! -L "$target" ]] || die "Refusing symlink: $target"; done
+for target in "$BIN" "$ENV_FILE" "$UNIT" "$(dirname "$BIN")/nekopass-agent-update-source.json"; do [[ ! -L "$target" ]] || die "Refusing symlink: $target"; done
 WORK=$(mktemp -d /tmp/nekopass-install.XXXXXXXX)
 [[ "$WORK" == /tmp/nekopass-install.* ]] || die 'Invalid temporary directory'
 MANAGER_SOURCE="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/nekopassctl.sh"
@@ -235,8 +235,8 @@ PY_COMPARE_ENDPOINTS
 fi
 FILE="nekopass-agent-linux-$ARCH"
 if [[ -z "$BINARY_URL" ]]; then
- if [[ "$VERSION" == latest && "$DOWNLOAD_BASE" == https://github.com/hajidishu/nekopass/releases/download ]]; then
-  BINARY_URL="https://github.com/hajidishu/nekopass/releases/latest/download/$FILE"
+ if [[ "$VERSION" == latest && ( "$DOWNLOAD_BASE" == https://github.com/*/releases/download || "$DOWNLOAD_BASE" == https://*/https://github.com/*/releases/download ) ]]; then
+  BINARY_URL="${DOWNLOAD_BASE%/releases/download}/releases/latest/download/$FILE"
  else BINARY_URL="$DOWNLOAD_BASE/$VERSION/$FILE"; fi
 fi
 
@@ -298,6 +298,11 @@ WantedBy=multi-user.target
 UNIT
 install -m 644 "$WORK/agent.service" "$UNIT"
 install -m 755 "$WORK/nekopass-update" "$(dirname "$BIN")/nekopass-update"
+python3 - "$DOWNLOAD_BASE" > "$WORK/update-source.json" <<'PY_UPDATE_SOURCE'
+import json,sys
+print(json.dumps({'download_base':sys.argv[1]}))
+PY_UPDATE_SOURCE
+install -o root -g root -m 644 "$WORK/update-source.json" "$(dirname "$BIN")/nekopass-agent-update-source.json"
 cat > "$WORK/update.service" <<UNIT
 [Unit]
 Description=Nekopass Agent release updater

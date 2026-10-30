@@ -6,7 +6,6 @@ const props = defineProps<{ active: string; admin?: boolean; isAdmin: boolean }>
 defineEmits<{ navigate: [] }>()
 const adminOpen = ref(true)
 const adminMenuId = useId()
-const path = location.pathname.replace(/\/+$/, '') || '/'
 const userLinks = [
  { path: '/', label: '主页', icon: 'home', key: 'home' },
  { path: '/profile', label: '个人中心', icon: 'user', key: 'profile' },
@@ -29,11 +28,7 @@ const adminLinks = [
  { path: '/admin/announcements', label: '公告管理', icon: 'notification', key: 'announcements' },
  { path: '/admin/payment_gateways', label: '支付方式', icon: 'wallet', key: 'payment_gateways' },
 ]
-function activeAdmin(key: string) {
- if (!props.admin) return false
- if (path === '/admin/node_groups') return key === 'node_groups'
- return props.active === key
-}
+function activeAdmin(key: string) { return !!props.admin && props.active === key }
 </script>
 
 <template>

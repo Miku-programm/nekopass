@@ -5,6 +5,7 @@ import "errors"
 // Only explicitly supplied fields are changed; false and egress zero are values.
 // Ownership, quotas, targets, SNI and listener settings cannot be patched here.
 type RuleBatchPatch struct {
+	IngressGroupID     *int64  `json:"ingress_group_id,omitempty"`
 	NodeID             *int64  `json:"node_id,omitempty"`
 	EgressGroupID      *int64  `json:"egress_group_id,omitempty"`
 	EgressNodeID       *int64  `json:"egress_node_id,omitempty"`
@@ -14,10 +15,19 @@ type RuleBatchPatch struct {
 }
 
 func (p *RuleBatchPatch) validate() error {
-	if p == nil || p.NodeID == nil && p.EgressNodeID == nil && p.EgressGroupID == nil && p.Balance == nil && p.ProxyAcceptEnabled == nil && p.ProxySendEnabled == nil {
+	if p == nil || p.NodeID == nil && p.IngressGroupID == nil && p.EgressNodeID == nil && p.EgressGroupID == nil && p.Balance == nil && p.ProxyAcceptEnabled == nil && p.ProxySendEnabled == nil {
 		return errors.New("请选择至少一个需要更新的字段")
 	}
-	if p.NodeID != nil && *p.NodeID <= 0 || p.EgressNodeID != nil && *p.EgressNodeID < 0 || p.EgressGroupID != nil && *p.EgressGroupID < 0 || p.EgressGroupID != nil && p.EgressNodeID != nil && *p.EgressGroupID != 0 && *p.EgressNodeID != 0 {
+	if p.NodeID != nil && p.IngressGroupID != nil {
+		return errors.New("不能同时选择单节点和节点组")
+	}
+	if p.IngressGroupID != nil && *p.IngressGroupID <= 0 {
+		return errors.New("入口节点组无效")
+	}
+	if p.EgressGroupID != nil && (*p.EgressGroupID < 0 || p.EgressNodeID != nil && *p.EgressGroupID != 0 && *p.EgressNodeID != 0) {
+		return errors.New("出口节点组无效")
+	}
+	if p.NodeID != nil && *p.NodeID <= 0 || p.EgressNodeID != nil && *p.EgressNodeID < 0 {
 		return errors.New("入口或出口节点无效")
 	}
 	if p.Balance != nil && *p.Balance != "random" && *p.Balance != "round_robin" && *p.Balance != "least_connections" {
@@ -27,11 +37,20 @@ func (p *RuleBatchPatch) validate() error {
 }
 
 func (p *RuleBatchPatch) apply(in *RuleInput) error {
-	if p.NodeID != nil && *p.NodeID != in.NodeID {
-		if in.TLSInboundID != 0 {
+	if p.IngressGroupID != nil && *p.IngressGroupID != in.IngressGroupID {
+		if in.TLSInboundID != 0 || in.TLSInboundPort != 0 {
+			return errors.New("共享 TLS 规则不能批量切换到节点组")
+		}
+		in.NodeID = 0
+		in.IngressGroupID = *p.IngressGroupID
+		in.ListenPort = 0
+	}
+	if p.NodeID != nil && (*p.NodeID != in.NodeID || in.IngressGroupID != 0) {
+		if in.TLSInboundID != 0 || in.TLSInboundPort != 0 {
 			return errors.New("共享 TLS 规则切换入口时，请逐条编辑并选择新节点的共享 TLS 入口")
 		}
 		in.NodeID = *p.NodeID
+		in.IngressGroupID = 0
 		in.ListenPort = 0 // Follow the existing batch ingress-switch allocation policy.
 	}
 	if p.EgressNodeID != nil {
@@ -48,7 +67,7 @@ func (p *RuleBatchPatch) apply(in *RuleInput) error {
 		in.Balance = *p.Balance
 	}
 	if p.ProxyAcceptEnabled != nil {
-		if in.TLSInboundID != 0 {
+		if in.TLSInboundID != 0 || in.TLSInboundPort != 0 {
 			return errors.New("共享 TLS 入站的 Proxy Protocol 接收由管理员配置")
 		}
 		if !*p.ProxyAcceptEnabled {

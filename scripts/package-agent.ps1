@@ -1,4 +1,4 @@
-param([string]$Version = 'v0.19.1')
+param([string]$Version = 'v0.19.4')
 $ErrorActionPreference = 'Stop'
 if ($Version -notmatch '^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$' -or $Version.Contains('..')) { throw 'Invalid version' }
 $repoRoot = Split-Path -Parent $PSScriptRoot
@@ -14,9 +14,11 @@ $managerText = [IO.File]::ReadAllText((Join-Path $repoRoot 'scripts/nekopassctl.
 $managerPayload = "write_manager_payload() {`ncat <<'NEKOPASS_MANAGER_PAYLOAD'`n" + $managerText.TrimEnd() + "`nNEKOPASS_MANAGER_PAYLOAD`n}`n"
 $updaterText = [IO.File]::ReadAllText((Join-Path $repoRoot 'scripts/nekopass-update.py')).Replace("`r`n", "`n")
 $updaterPayload = "write_updater_payload() {`ncat <<'NEKOPASS_UPDATER_PAYLOAD'`n" + $updaterText.TrimEnd() + "`nNEKOPASS_UPDATER_PAYLOAD`n}`n"
-$installerText = $installerText.Replace('# PACKAGED_MANAGER', $managerPayload).Replace('# PACKAGED_UPDATER', $updaterPayload).Replace('v0.19.1', $Version)
+$installerText = $installerText.Replace('# PACKAGED_MANAGER', $managerPayload).Replace('# PACKAGED_UPDATER', $updaterPayload).Replace('v0.19.4', $Version)
 [IO.File]::WriteAllText($installerPath, $installerText, $utf8)
 [IO.File]::WriteAllText((Join-Path $assetRoot 'nekopassctl.sh'), $managerText, $utf8)
+$uninstallerText = [IO.File]::ReadAllText((Join-Path $repoRoot 'scripts/uninstall-agent.sh')).Replace("`r`n", "`n")
+[IO.File]::WriteAllText((Join-Path $assetRoot 'uninstall-agent.sh'), $uninstallerText, $utf8)
 [IO.File]::WriteAllText((Join-Path $assetRoot 'nekopass-update.py'), $updaterText, $utf8)
 $previousOS = $env:GOOS
 $previousArch = $env:GOARCH
@@ -40,8 +42,8 @@ try {
     if (Test-Path -LiteralPath (Join-Path $assetRoot 'ca.crt')) { Remove-Item -LiteralPath (Join-Path $assetRoot 'ca.crt') }
     $settings = [ordered]@{
         site_name = 'Nekopass'; panel_url = 'https://YOUR-PANEL.example.com:8443'; agent_host = 'YOUR-PANEL.example.com'; agent_port = 9443; agent_transport = 'tls'
-        installer_url = 'https://github.com/hajidishu/nekopass/releases/latest/download/install-agent.sh'
-        release_base_url = 'https://github.com/hajidishu/nekopass/releases/download'; agent_version = 'latest'
+        installer_url = 'https://github.com/Alma0010/nekopass/releases/latest/download/install-agent.sh'
+        release_base_url = 'https://github.com/Alma0010/nekopass/releases/download'; agent_version = 'latest'
         install_token_minutes = 30
     }
     [IO.File]::WriteAllText((Join-Path $repoRoot 'dist/oss/settings.example.json'), ($settings | ConvertTo-Json) + "`n", $utf8)
@@ -51,6 +53,7 @@ try {
 Upload these files preserving the paths relative to dist/oss:
 
 - nekopass/install-agent.sh
+- nekopass/uninstall-agent.sh (default: remove all local agents; --service-name targets one)
 - nekopass/nekopassctl.sh (optional standalone service manager; also embedded in the installer)
 - nekopass/releases/$Version/nekopass-agent-linux-amd64
 - nekopass/releases/$Version/nekopass-agent-linux-arm64

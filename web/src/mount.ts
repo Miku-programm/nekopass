@@ -5,12 +5,15 @@ import 'element-plus/dist/index.css'
 import 'element-plus/theme-chalk/dark/css-vars.css'
 import './style.css'
 import {loadSite} from './site'
+import NavigationRoot from './NavigationRoot.vue'
+import {resolveRoute} from './navigation'
 import { initializeTheme, setTheme } from './theme'
 
 export function applyTheme(dark: boolean) { setTheme(dark ? 'dark' : 'light') }
 export function mount(component: Component, props: Record<string, unknown> = {}) {
  initializeTheme()
  window.addEventListener('pageshow', e => { if (e.persisted) location.reload() })
- createApp(component, props).use(ElementPlus, { locale: zhCn }).mount('#app')
+ const app = resolveRoute(location.pathname) ? createApp(NavigationRoot, { initial: component, initialProps: props }) : createApp(component, props)
+ app.use(ElementPlus, { locale: zhCn }).mount('#app')
  void loadSite()
 }

@@ -22,6 +22,7 @@ import (
 
 type h2SessionKey struct{}
 type h2ServerSession struct {
+	ingress int64 // Nonzero when authenticated by the outer encrypted connection.
 	binding []byte
 	mu      sync.Mutex
 	nonces  map[string]bool
@@ -170,7 +171,7 @@ func (e *Engine) handleH2(w http.ResponseWriter, r *http.Request) {
 		exporter, err = r.TLS.ExportKeyingMaterial(exporterLabel, nil, 32)
 	} else {
 		session, ok := r.Context().Value(h2SessionKey{}).(*h2ServerSession)
-		if !ok || len(session.binding) != 32 {
+		if !ok || len(session.binding) != 32 || session.ingress != 0 && session.ingress != open.Ingress {
 			e.camouflage(w, r)
 			return
 		}
@@ -306,7 +307,7 @@ func h2RuleAllowed(policy *tunnelPolicy, open h2Open) bool {
 	if network == "" {
 		network = "tcp"
 	}
-	if policy == nil || policy.rules[open.Rule] == nil || !networkIncludes(policy.rules[open.Rule].Protocol, network) {
+	if policy == nil || policy.rules[[2]int64{open.Rule, open.Ingress}] == nil || !networkIncludes(policy.rules[[2]int64{open.Rule, open.Ingress}].Protocol, network) {
 		return false
 	}
 	return tunnelRuleAllowed(policy, open.Rule, open.Ingress, open.User, open.Epoch, open.Target)

@@ -32,7 +32,8 @@ watch(() => props.accountId, id => {
     emit('interval-change', value.intervals)
   })
 }, { immediate: true })
-onUnmounted(() => { unsubscribe?.(); stopDragging() })
+const now = ref(Date.now()), clock = setInterval(() => { now.value = Date.now() }, 1000)
+onUnmounted(() => { unsubscribe?.(); stopDragging(); clearInterval(clock) })
 function persist(value: ProbePreferences) {
   if (!props.accountId || !savePreferences(props.accountId, value)) {
     ElMessage.error('无法保存本地偏好，请检查浏览器存储设置。')
@@ -71,6 +72,26 @@ function rate(value: number | null) {
   if (value >= 1000) return (value / 1000).toFixed(2) + ' Gbps'
   if (value > 0 && value < 1) return (value * 1000).toFixed(2) + ' Kbps'
   return value.toFixed(2) + ' Mbps'
+}
+function uptime(node: ProbeNode) {
+  if (!node.uptime_ready) return '—'
+  const age = online(node) && node.updated_at ? Math.max(0, Math.floor((now.value - Date.parse(node.updated_at)) / 1000)) : 0
+  const seconds = Number(node.uptime_seconds || 0) + age, pad = (value: number) => String(value).padStart(2, '0')
+  return `${Math.floor(seconds / 86400)} 天 ${pad(Math.floor(seconds % 86400 / 3600))}:${pad(Math.floor(seconds % 3600 / 60))}:${pad(seconds % 60)}`
+}
+function traffic(node: ProbeNode, period: 'today' | '30d') {
+  if (!node.traffic_ready) return '↑ —　↓ —'
+  return `↑ ${bytes(Number(node[`traffic_${period}_tx_bytes`] || 0))}　↓ ${bytes(Number(node[`traffic_${period}_rx_bytes`] || 0))}`
+}
+const trafficTitle = (node: ProbeNode) => node.traffic_ready ? `今日 ${traffic(node, 'today')}
+近 30 天 ${traffic(node, '30d')}
+统计时区：UTC+8` : '暂无流量统计'
+const reportTitle = (node: ProbeNode) => `最后上报：${timestamp(node.last_report_at ?? node.updated_at)}
+首次上线：${timestamp(node.first_connected_at)}`
+function diskIO(node: ProbeNode) {
+  const speed = (value?: number) => Number(value || 0) >= 1e9 ? (Number(value) / 1e9).toFixed(2) + ' GB/s' : (Number(value || 0) / 1e6).toFixed(2) + ' MB/s'
+  if (!online(node) || !node.metrics?.disk_io_ready) return '—'
+  return `读 ${speed(node.metrics.disk_read_bytes_per_second)} · 写 ${speed(node.metrics.disk_write_bytes_per_second)}${node.metrics.disk_device ? '（' + node.metrics.disk_device + '）' : ''}`
 }
 function network(node: ProbeNode, direction: 'rx_mbps' | 'tx_mbps') { return rate(metric(node, 'network_ready', direction)) }
 function groupNetwork(nodes: ProbeNode[], direction: 'rx_mbps' | 'tx_mbps') {
@@ -248,20 +269,20 @@ function menuKeydown(event: KeyboardEvent) {
         <div v-if="displayMode === 'cards'" class="server-card-grid">
           <article v-for="(node, index) in group.nodes" :key="node.id" class="server-card" :data-probe-node-id="node.id" :class="{ 'is-offline': !online(node), 'is-drag-source': dragging?.groupId === group.id && dragging.nodeId === node.id, 'is-drop-target': dragging?.groupId === group.id && dragging.over === node.id && dragging.nodeId !== node.id }">
             <header class="server-card-header"><div class="server-card-title"><span class="server-symbol" aria-hidden="true"><Icon name="node" /></span><strong :title="node.name + (note(node) ? '\n本地备注：' + note(node) : '')">{{ title(node) }}</strong><div v-if="isManual(group.id)" class="server-sort-actions"><button class="drag-handle" aria-label="拖动调整顺序" title="拖动排序，或使用方向键移动" :aria-pressed="dragging?.nodeId === node.id && dragging.groupId === group.id" @pointerdown="startDragging($event, group.id, node.id)" @keydown.up.prevent="moveNode(group.id,node.id,-1)" @keydown.down.prevent="moveNode(group.id,node.id,1)" @keydown.left.prevent="moveNode(group.id,node.id,-1)" @keydown.right.prevent="moveNode(group.id,node.id,1)" @keydown.esc="stopDragging">⠿</button><button aria-label="上移" :disabled="index === 0" @click="moveNode(group.id,node.id,-1)">↑</button><button aria-label="下移" :disabled="index === group.nodes.length-1" @click="moveNode(group.id,node.id,1)">↓</button></div></div></header>
-            <div class="server-card-system" title="当前节点接口尚未上报操作系统信息"><span>OS</span><b>暂无数据</b></div>
+            <div class="server-card-system" title="主磁盘 I/O"><span>I/O</span><b>{{ diskIO(node) }}</b></div>
             <section class="server-card-resources" aria-label="资源使用情况"><div v-for="resource in resources(node)" :key="resource.label" class="server-card-metric" :title="resource.detail"><div><span>{{ resource.label }}</span><b>{{ resource.value === null ? '—' : resource.value.toFixed(1) + '%' }}</b></div><ProbeProgress :value="resource.value" :label="resource.label" variant="card" /></div></section>
-            <section class="server-card-stats"><div title="当前节点接口尚未上报累计网卡流量"><span>总流量</span><b>↑ —　↓ —</b></div><div :title="connections(node)"><span>网络</span><b>↑ {{ network(node, 'tx_mbps') }}　↓ {{ network(node, 'rx_mbps') }}</b></div><div :title="online(node) ? '当前节点接口尚未上报开机时间；最近采样：' + timestamp(node.updated_at) : '最近采样：' + timestamp(node.updated_at)"><span>{{ online(node) ? '运行时间' : '最后上报' }}</span><b>{{ online(node) ? '—' : timestamp(node.updated_at) }}</b></div></section>
+            <section class="server-card-stats"><div :title="trafficTitle(node)"><span>近30天</span><b>{{ traffic(node, '30d') }}</b></div><div :title="connections(node)"><span>网络</span><b>↑ {{ network(node, 'tx_mbps') }}　↓ {{ network(node, 'rx_mbps') }}</b></div><div :title="reportTitle(node)"><span>{{ online(node) ? '运行时间' : '最后上报' }}</span><b>{{ online(node) ? uptime(node) : timestamp(node.last_report_at ?? node.updated_at) }}</b></div></section>
             <div class="server-card-header-actions"><span class="server-status" :class="online(node) ? 'online' : 'offline'" :title="'节点 #' + node.id + ' · 最近采样：' + timestamp(node.updated_at)">{{ status(node) }}</span><button class="probe-icon" aria-label="信息 / 本地备注" :title="note(node) ? '本地备注：' + note(node) : '信息 / 本地备注'" @click="openInfo(node)"><Icon name="help" /><span v-if="note(node)" class="note-dot"></span></button></div>
           </article>
         </div>
         <div v-else class="server-table-scroll" tabindex="0" :aria-label="group.name + '节点状态表格，可横向滚动'">
-          <table class="server-table"><caption class="sr-only">{{ group.name }}服务器状态</caption><thead><tr><th v-if="isManual(group.id)" scope="col">顺序</th><th scope="col">状态</th><th scope="col">节点</th><th scope="col">速率</th><th scope="col">开机时长</th><th scope="col">流量</th><th scope="col">CPU</th><th scope="col">RAM</th><th scope="col">存储</th><th scope="col">信息</th></tr></thead><tbody>
+          <table class="server-table"><caption class="sr-only">{{ group.name }}服务器状态</caption><thead><tr><th v-if="isManual(group.id)" scope="col">顺序</th><th scope="col">状态</th><th scope="col">节点</th><th scope="col">速率</th><th scope="col">开机时长</th><th scope="col">近30天流量</th><th scope="col">CPU</th><th scope="col">RAM</th><th scope="col">存储</th><th scope="col">信息</th></tr></thead><tbody>
             <tr v-for="(node,index) in group.nodes" :key="node.id" :data-probe-node-id="node.id" :class="{ 'is-offline': !online(node), 'is-drag-source': dragging?.groupId === group.id && dragging.nodeId === node.id, 'is-drop-target': dragging?.groupId === group.id && dragging.over === node.id && dragging.nodeId !== node.id }">
               <td v-if="isManual(group.id)" class="server-sort-actions"><button class="drag-handle" aria-label="拖动调整顺序" title="拖动排序，或使用方向键移动" :aria-pressed="dragging?.nodeId === node.id && dragging.groupId === group.id" @pointerdown="startDragging($event, group.id, node.id)" @keydown.up.prevent="moveNode(group.id,node.id,-1)" @keydown.down.prevent="moveNode(group.id,node.id,1)" @keydown.esc="stopDragging">⠿</button><button aria-label="上移" :disabled="index === 0" @click="moveNode(group.id,node.id,-1)">↑</button><button aria-label="下移" :disabled="index === group.nodes.length-1" @click="moveNode(group.id,node.id,1)">↓</button></td>
               <td><span class="server-status" :class="online(node) ? 'online' : 'offline'" :title="'最近采样：' + timestamp(node.updated_at)">{{ status(node) }}</span></td>
               <th scope="row" class="server-name"><span :title="node.name + (note(node) ? '\n本地备注：' + note(node) : '')">{{ title(node) }}</span><small>#{{ node.id }}</small></th>
               <td class="server-network" :title="connections(node)"><span>↑ {{ network(node,'tx_mbps') }}</span><span>↓ {{ network(node,'rx_mbps') }}</span></td>
-              <td title="当前节点接口尚未上报开机时间">—</td><td class="server-traffic" title="当前节点接口尚未上报累计网卡流量"><span>↑ —</span><span>↓ —</span></td>
+              <td :title="'最后上报：' + timestamp(node.last_report_at ?? node.updated_at)">{{ uptime(node) }}</td><td class="server-traffic" :title="trafficTitle(node)"><span>{{ traffic(node, '30d').split('　')[0] }}</span><span>{{ traffic(node, '30d').split('　')[1] }}</span></td>
               <td v-for="(resource,rIndex) in resources(node)" :key="resource.label" :title="resource.detail"><ProbeProgress :value="resource.value" :label="resource.label" :variant="rIndex === 0 ? 'cpu' : 'resource'" /></td>
               <td><button class="probe-icon" aria-label="信息 / 本地备注" :title="note(node) ? '本地备注：' + note(node) : '信息 / 本地备注'" @click="openInfo(node)"><Icon name="help" /><span v-if="note(node)" class="note-dot"></span></button></td>
             </tr>
@@ -270,7 +291,7 @@ function menuKeydown(event: KeyboardEvent) {
       </section>
     </div>
     <el-dialog v-model="infoOpen" title="服务器信息" width="560px" class="probe-dialog" :before-close="closeInfo" destroy-on-close>
-      <template v-if="selectedNode"><p>{{ selectedNode.name }} · 节点 #{{ selectedNode.id }}</p><dl class="probe-info"><dt>最近采样</dt><dd>{{ timestamp(selectedNode.updated_at) }}</dd><dt>连接数</dt><dd>{{ connections(selectedNode) }}</dd><dt>LoadAvg</dt><dd>{{ load(selectedNode) }}</dd><template v-for="resource in resources(selectedNode)" :key="resource.label"><dt>{{ resource.label }}</dt><dd>{{ resource.value === null ? '—' : resource.value.toFixed(1) + '%' }} · {{ resource.detail }}</dd></template></dl><label class="note-label" for="probe-note">本地备注</label><textarea id="probe-note" v-model="draftNote" aria-label="本地备注" maxlength="200" rows="4" placeholder="填写本地备注"></textarea><div class="note-help"><span>仅保存在此浏览器，不同步到服务器</span><span>{{ draftNote.length }} / 200</span></div><details v-if="adminView" class="node-json"><summary>详细信息</summary><pre>{{ JSON.stringify(selectedNode,null,2) }}</pre></details></template>
+      <template v-if="selectedNode"><p>{{ selectedNode.name }} · 节点 #{{ selectedNode.id }}</p><dl class="probe-info"><dt>最近采样</dt><dd>{{ timestamp(selectedNode.updated_at) }}</dd><dt>已运行</dt><dd>{{ uptime(selectedNode) }}</dd><dt>最后上报</dt><dd>{{ timestamp(selectedNode.last_report_at) }}</dd><dt>首次上线</dt><dd>{{ timestamp(selectedNode.first_connected_at) }}</dd><dt>今日流量</dt><dd>{{ traffic(selectedNode, 'today') }}</dd><dt>近 30 天</dt><dd>{{ traffic(selectedNode, '30d') }}</dd><dt>磁盘 I/O</dt><dd>{{ diskIO(selectedNode) }}</dd><dt>连接数</dt><dd>{{ connections(selectedNode) }}</dd><dt>LoadAvg</dt><dd>{{ load(selectedNode) }}</dd><template v-for="resource in resources(selectedNode)" :key="resource.label"><dt>{{ resource.label }}</dt><dd>{{ resource.value === null ? '—' : resource.value.toFixed(1) + '%' }} · {{ resource.detail }}</dd></template></dl><label class="note-label" for="probe-note">本地备注</label><textarea id="probe-note" v-model="draftNote" aria-label="本地备注" maxlength="200" rows="4" placeholder="填写本地备注"></textarea><div class="note-help"><span>仅保存在此浏览器，不同步到服务器</span><span>{{ draftNote.length }} / 200</span></div><details v-if="adminView" class="node-json"><summary>详细信息</summary><pre>{{ JSON.stringify(selectedNode,null,2) }}</pre></details></template>
       <template #footer><el-button @click="closeInfo()">关闭</el-button><el-button type="primary" :disabled="!noteDirty" @click="saveNote">保存备注</el-button></template>
     </el-dialog>
     <el-dialog v-model="refreshOpen" title="刷新间隔设置" width="480px" class="probe-dialog"><p>单位为毫秒，保存后立即生效。</p><el-form label-position="top"><el-form-item label="前台刷新间隔（毫秒）"><el-input-number v-model="foregroundInput" :min="MIN_INTERVAL" :max="MAX_INTERVAL" :precision="0" :step="1000" /></el-form-item><el-form-item label="后台刷新间隔（毫秒）"><el-input-number v-model="backgroundInput" :min="MIN_INTERVAL" :max="MAX_INTERVAL" :precision="0" :step="1000" /></el-form-item></el-form><p class="interval-help">允许 1–300 秒；页面切到后台时使用后台间隔。</p><template #footer><el-button @click="refreshOpen = false">取消</el-button><el-button type="primary" @click="saveRefreshSettings">保存</el-button></template></el-dialog>
