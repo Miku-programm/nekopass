@@ -1,6 +1,6 @@
 # 发布与文档部署
 
-本 fork 的仓库是 [Alma0010/nekopass](https://github.com/Alma0010/nekopass)，安装、检查更新和下载发布文件均使用此仓库。文档站部署地址为 [Alma0010.github.io/nekopass](https://Alma0010.github.io/nekopass/)，首次部署成功后可访问。
+本 fork 的仓库是 [Miku-programm/nekopass](https://github.com/Miku-programm/nekopass)，安装、检查更新和下载发布文件均使用此仓库。文档站部署地址为 [Miku-programm.github.io/nekopass](https://Miku-programm.github.io/nekopass/)，首次部署成功后可访问。
 
 ## 首次准备
 
@@ -13,7 +13,7 @@
 ```powershell
 git status
 git add .
-git commit -m "将安装更新与文档切换到 Alma0010 仓库"
+git commit -m "将安装更新与文档切换到 Miku-programm 仓库"
 git push origin main
 ```
 
@@ -21,11 +21,11 @@ git push origin main
 
 ### 从网页发版
 
-1. 打开 [Publish release](https://github.com/Alma0010/nekopass/actions/workflows/release.yml)。
+1. 打开 [Publish release](https://github.com/Miku-programm/nekopass/actions/workflows/release.yml)。
 2. 点击 **Run workflow**，分支选择 `main`。
 3. 在 `version` 输入新的正式版本号，例如首次 fork 发版可使用 `v0.19.1`，然后点击 **Run workflow**。
 4. 等待工作流完成。它会运行检查和测试，编译 Linux amd64 / arm64 的面板与 Agent，创建草稿、上传附件，再发布正式 Release 并设为最新版本。
-5. 在 [Releases](https://github.com/Alma0010/nekopass/releases) 确认发布包和安装脚本已齐全。
+5. 在 [Releases](https://github.com/Miku-programm/nekopass/releases) 确认发布包和安装脚本已齐全。
 
 版本号只接受 `vX.Y.Z`，例如 `v0.19.1`；当前更新器不接受 `-alma.1` 等后缀。每次发版使用一个未使用过、数值递增的版本号。本地合并上游后可能已有上游标签，尤其 `v0.19.0` 指向上游原始提交，不能拿来标记本 fork 的修改。工作流会拒绝指向其他提交的已有标签。不要删除或强制覆盖上游标签。
 
@@ -56,17 +56,17 @@ git push origin v0.19.1
 例如，发布成功后可在服务器直接完整卸载所有节点：
 
 ```bash
-wget https://github.com/Alma0010/nekopass/releases/latest/download/uninstall-agent.sh -O uninstall-agent.sh && sudo bash uninstall-agent.sh
+wget https://github.com/Miku-programm/nekopass/releases/latest/download/uninstall-agent.sh -O uninstall-agent.sh && sudo bash uninstall-agent.sh
 ```
 
 指定服务名卸载的用法见 [卸载节点](./node.md#卸载节点)。
 
 ## 部署 GitHub Pages 文档站
 
-1. 打开仓库 [Settings → Pages](https://github.com/Alma0010/nekopass/settings/pages)。
+1. 打开仓库 [Settings → Pages](https://github.com/Miku-programm/nekopass/settings/pages)。
 2. 在 **Build and deployment → Source** 选择 **GitHub Actions**。本项目已有工作流，无需新建 Jekyll 模板或选择 `main /docs`。
-3. 打开 [Deploy documentation](https://github.com/Alma0010/nekopass/actions/workflows/docs.yml)，点击 **Run workflow**，选择 `main` 后运行。
-4. 等待 `build` 和 `deploy` 成功，再打开 [文档站](https://Alma0010.github.io/nekopass/)。首次部署完成后，Settings → Pages 也会显示站点地址。
+3. 打开 [Deploy documentation](https://github.com/Miku-programm/nekopass/actions/workflows/docs.yml)，点击 **Run workflow**，选择 `main` 后运行。
+4. 等待 `build` 和 `deploy` 成功，再打开 [文档站](https://Miku-programm.github.io/nekopass/)。首次部署完成后，Settings → Pages 也会显示站点地址。
 
 工作流构建 VitePress，自动设置 `/nekopass/` 子路径，只部署 `docs/.vitepress/dist/` 中的静态文件。以后修改 `docs/` 并推送到默认分支会自动更新网站，无需创建 Release，也无需将构建产物提交到 Git。
 
@@ -94,10 +94,10 @@ npm --prefix docs run preview
 2. 使用本 fork 的面板安装脚本覆盖升级，保留已有数据；不要添加 `--reinstall`：
 
    ```bash
-   wget https://github.com/Alma0010/nekopass/releases/latest/download/install-panel.sh -O install-panel.sh && sudo bash install-panel.sh
+   wget https://github.com/Miku-programm/nekopass/releases/latest/download/install-panel.sh -O install-panel.sh && sudo bash install-panel.sh
    ```
 
-3. 在面板「系统设置 → 节点安装」将安装脚本地址改为 `https://github.com/Alma0010/nekopass/releases/latest/download/install-agent.sh`，版本下载根地址改为 `https://github.com/Alma0010/nekopass/releases/download`，Agent 版本填写 `latest` 或本 fork 已发布的版本号并保存。
+3. 在面板「系统设置 → 节点安装」将安装脚本地址改为 `https://github.com/Miku-programm/nekopass/releases/latest/download/install-agent.sh`，版本下载根地址改为 `https://github.com/Miku-programm/nekopass/releases/download`，Agent 版本填写 `latest` 或本 fork 已发布的版本号并保存。
 4. 从面板复制最新的节点安装命令，在对应节点重新执行，以安装本 fork 的 Agent 和更新组件。独立命名实例继续使用原有 `--service-name`。
 
 不要只替换服务器上的二进制就认为更新来源也已切换；旧安装留下的更新脚本也需要通过新版安装流程更新。此 fork 的节点组整合需要协议版本 25 的 Agent，面板与节点应使用此 fork 发布的配套版本。

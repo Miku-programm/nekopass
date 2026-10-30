@@ -3,7 +3,7 @@ package release
 import "testing"
 
 func TestDownloadBaseAndInstalledVersion(t *testing.T) {
-	proxy := "https://v4.gh-proxy.org/https://github.com/Alma0010/nekopass/releases/download"
+	proxy := "https://v4.gh-proxy.org/https://github.com/Miku-programm/nekopass/releases/download"
 	for _, base := range []string{DownloadBase, proxy, "https://oss.example/releases", "https://[::1]:443/releases"} {
 		got, err := NormalizeDownloadBase(base + "/")
 		if err != nil || got != base {

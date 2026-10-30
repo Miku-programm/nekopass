@@ -4,7 +4,7 @@ const base = process.env.VITEPRESS_BASE || '/'
 if (!base.startsWith('/') || !base.endsWith('/') || /[?#\\]/.test(base)) {
   throw new Error('VITEPRESS_BASE must be a path starting and ending with /')
 }
-const repository = process.env.GITHUB_REPOSITORY || 'Alma0010/nekopass'
+const repository = process.env.GITHUB_REPOSITORY || 'Miku-programm/nekopass'
 
 export default defineConfig({
   lang: 'zh-CN',

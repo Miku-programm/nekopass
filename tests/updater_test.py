@@ -15,13 +15,13 @@ class UpdaterTests(unittest.TestCase):
    self.assertEqual(updater.main(),0)
   self.assertEqual(json.loads(output.getvalue()),{'download_base':True})
  def test_download_source_validation(self):
-  base='https://v4.gh-proxy.org/https://github.com/Alma0010/nekopass/releases/download'
+  base='https://v4.gh-proxy.org/https://github.com/Miku-programm/nekopass/releases/download'
   self.assertEqual(updater.normalize_download_base(base+'/'),base)
   for value in ['',None,123,'http://proxy.example/files','https://u:p@proxy.example/files','https://proxy.example/files?token=x','https://proxy.example/files#x','https://proxy.example:99999/files','https://proxy.example/space here','https://proxy.example/line\nnext','https://proxy.example/back\\slash']:
    with self.subTest(value=value),self.assertRaises(ValueError):updater.normalize_download_base(value)
  def test_agent_update_downloads_through_selected_proxy(self):
   original_path=pathlib.Path
-  proxy='https://v4.gh-proxy.org/https://github.com/Alma0010/nekopass/releases/download'
+  proxy='https://v4.gh-proxy.org/https://github.com/Miku-programm/nekopass/releases/download'
   with tempfile.TemporaryDirectory() as temp:
    root=original_path(temp);base=root/'opt/nekopass-agent-test';(base/'bin').mkdir(parents=True)
    binary=base/'bin/nekopass-agent';binary.write_bytes(b'\x7fELFold')
@@ -38,7 +38,7 @@ class UpdaterTests(unittest.TestCase):
     self.assertEqual(binary.with_name('nekopass-agent.previous').read_bytes(),b'\x7fELFold')
  @unittest.skipIf(sys.platform=='win32','Linux ownership and no-follow flags')
  def test_agent_download_source_requires_root_authorization(self):
-  proxy='https://proxy.example/https://github.com/Alma0010/nekopass/releases/download'
+  proxy='https://proxy.example/https://github.com/Miku-programm/nekopass/releases/download'
   with tempfile.TemporaryDirectory() as temp:
    base=pathlib.Path(temp);(base/'bin').mkdir();config=base/'bin/nekopass-agent-update-source.json'
    updater.check_agent_download_source(base,updater.BASE)

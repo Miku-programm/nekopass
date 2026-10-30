@@ -10,7 +10,7 @@ write_updater_payload() { return 1; }
 # PACKAGED_UPDATER
 
 SERVER=''; TOKEN=''; TOKEN_FILE=''; PANEL_URL=''; INSTALL_TOKEN=''
-DOWNLOAD_BASE='https://github.com/Alma0010/nekopass/releases/download'
+DOWNLOAD_BASE='https://github.com/Miku-programm/nekopass/releases/download'
 VERSION='v0.19.4'; ARCH='auto'; BINARY_URL=''
 SERVICE='nekopass-agent'
 NO_START=0; DRY_RUN=0; WORK=''; CHANGED=0; WAS_ACTIVE=0; WAS_ENABLED=0; STATE_BACKUP=''; RESET_STATE=0
@@ -20,7 +20,7 @@ Nekopass Agent installer (Linux + systemd, run as root)
 
 Direct mode:
   bash install-agent.sh -s https://panel.example.com:9443 -t NODE_TOKEN \
-    -d https://github.com/Alma0010/nekopass/releases/download -v v0.19.4
+    -d https://github.com/Miku-programm/nekopass/releases/download -v v0.19.4
 
 Legacy installation credential (compatibility only):
   bash install-agent.sh -p https://panel.example.com -i INSTALL_TOKEN

@@ -20,7 +20,7 @@ class InstallerURLTests(unittest.TestCase):
         start = source.index('FILE="nekopass-agent-linux-$ARCH"')
         end = source.index('\nlog "Downloading Agent ', start)
         script = source[start:end] + '\nprintf "%s" "$BINARY_URL"\n'
-        repo = 'https://github.com/Alma0010/nekopass'
+        repo = 'https://github.com/Miku-programm/nekopass'
         proxy = 'https://v4.gh-proxy.org/' + repo
         other_proxy = 'https://proxy.example/github/' + repo
         cases = [

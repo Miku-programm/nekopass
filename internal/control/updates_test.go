@@ -156,7 +156,7 @@ func TestNodeUpdateUsesSettingsProxyAndRejectsLegacyHelpers(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() { f.p.Exec(ctx, "UPDATE site_settings SET config=$1 WHERE id=1", original) })
-	proxy := "https://v4.gh-proxy.org/https://github.com/Alma0010/nekopass/releases/download"
+	proxy := "https://v4.gh-proxy.org/https://github.com/Miku-programm/nekopass/releases/download"
 	if _, err := f.p.Exec(ctx, "UPDATE site_settings SET config=jsonb_set(config,'{release_base_url}',to_jsonb($1::text)) WHERE id=1", proxy); err != nil {
 		t.Fatal(err)
 	}

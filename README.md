@@ -52,7 +52,7 @@ Nekopass是一个开源免费的转发面板，设计参考了nyanpass，但是�
 Debian / Ubuntu，amd64 / arm64：
 
 ```bash
-wget https://github.com/Alma0010/nekopass/releases/latest/download/install-panel.sh -O install-panel.sh && sudo bash install-panel.sh
+wget https://github.com/Miku-programm/nekopass/releases/latest/download/install-panel.sh -O install-panel.sh && sudo bash install-panel.sh
 ```
 
 安装完成显示管理员账号和随机密码。网页默认 `8080`，节点控制端口 `9443`；网页 HTTPS 自行配置 Nginx。
@@ -68,8 +68,8 @@ wget https://github.com/Alma0010/nekopass/releases/latest/download/install-panel
 默认完整卸载本机全部节点（含独立命名的节点）、配置、状态数据、更新服务和专用账户，保留面板及数据库。只卸载一个节点时指定服务名。
 
 ```bash
-wget https://github.com/Alma0010/nekopass/releases/latest/download/uninstall-agent.sh -O uninstall-agent.sh && sudo bash uninstall-agent.sh
-wget https://github.com/Alma0010/nekopass/releases/latest/download/uninstall-agent.sh -O uninstall-agent.sh && sudo bash uninstall-agent.sh --service-name nekopass-agent-hk1
+wget https://github.com/Miku-programm/nekopass/releases/latest/download/uninstall-agent.sh -O uninstall-agent.sh && sudo bash uninstall-agent.sh
+wget https://github.com/Miku-programm/nekopass/releases/latest/download/uninstall-agent.sh -O uninstall-agent.sh && sudo bash uninstall-agent.sh --service-name nekopass-agent-hk1
 ```
 
 以上命令依次为完整卸载、卸载指定节点，按需选择一条执行。需要先发布包含 `uninstall-agent.sh` 的正式 Release。卸载不会自动删除面板中的节点记录。
@@ -98,7 +98,7 @@ sudo nekopassctl panel reset-password # 重置管理员密码
 
 很显然readme.md放不下这么多字，所以我们创建了一个文档站，你可以在这里了解如何使用此软件
 
-https://Alma0010.github.io/nekopass/
+https://Miku-programm.github.io/nekopass/
 
 >文档由ai总结，目前缺少人工润色，但是不影响你查看
 

@@ -90,7 +90,7 @@ func TestUpdateCarriesProxyAndRequiresCapableHelper(t *testing.T) {
 	if err = e.SetUpdateDirectory(dir); err != nil {
 		t.Fatal(err)
 	}
-	proxy := "https://proxy.example/https://github.com/Alma0010/nekopass/releases/download/"
+	proxy := "https://proxy.example/https://github.com/Miku-programm/nekopass/releases/download/"
 	req := &pb.UpdateRequest{Generation: 1, Version: "v0.19.3", DownloadBase: proxy}
 	e.updateDownloadBaseSupported = false
 	if err = e.Apply(&pb.ControlMessage{Update: req}); err != nil {
