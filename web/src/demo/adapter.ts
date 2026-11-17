@@ -111,7 +111,7 @@ export function createDemoAPI(options: DemoOptions = {}) {
       if (!node) throw Error('演示节点不存在。')
       const common = {node_id:node.id,node_name:node.name,protocol_version:19,online:node.online,generation:1,status:{state:'disabled'},status_received_at:data.date}
       if (nodeEndpoint[2] === 'protocols') return result({...common,config:node,ingress_nodes:data.nodes})
-      if (nodeEndpoint[2] === 'ddns') return result({...common,config:{enabled:false,provider:'cloudflare',record_name:'',zone_id:'',token:'',ipv4:true,ipv6:false,interval_seconds:300,ttl:300,ipv4_url:'',ipv6_url:'',use_for_ingress:true,use_for_egress:true}})
+      if (nodeEndpoint[2] === 'ddns') return result({...common,config:{enabled:false,provider:'cloudflare',record_name:'',zone_id:'',key_id:'',token:'',ipv4:true,ipv6:false,interval_seconds:300,ttl:300,ipv4_url:'',ipv6_url:'',use_for_ingress:true,use_for_egress:true}})
       if (nodeEndpoint[2] === 'ip-recovery') return result({...common,config:{enabled:false,target_ip:'',failure_threshold:6,cooldown_seconds:300,instance_type:'ec2',auth_token:'',share_group_token:'',account_id:'',region_name:'',instance_id:'',static_ip:false}})
       return result({tls_only:false,inbounds:[{id:1,config:{name:'共享 TLS（演示）',port:443,enabled:true,proxy_accept:'off',allowed_sni:['*.example.invalid'],reject_empty_sni:true,unknown_sni_action:'reject',default_rule_id:0,max_handshakes:128,handshake_timeout_seconds:5},rule_count:0}],default_rules:[]})
     }

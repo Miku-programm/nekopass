@@ -1,16 +1,25 @@
 <script setup lang="ts">
-import { reactive, ref } from 'vue'
+import { computed, reactive, ref, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import PageShell from '../PageShell.vue'
 import { usePage } from '../page'
 import { api } from '../api'
-type Config={enabled:boolean;provider:string;record_name:string;zone_id:string;token:string;ipv4:boolean;ipv6:boolean;interval_seconds:number;ttl:number;ipv4_url:string;ipv6_url:string;ip_source:'api'|'interface';ignore_private_ips:boolean;use_for_ingress:boolean;use_for_egress:boolean}
+type Provider='cloudflare'|'alidns'|'dnspod'
+type Config={enabled:boolean;provider:Provider;record_name:string;zone_id:string;key_id:string;token:string;ipv4:boolean;ipv6:boolean;interval_seconds:number;ttl:number;ipv4_url:string;ipv6_url:string;ip_source:'api'|'interface';ignore_private_ips:boolean;use_for_ingress:boolean;use_for_egress:boolean}
 type Status={generation?:number;state?:string;ipv4?:string;ipv6?:string;checked_unix?:number;updated_unix?:number;error?:string}
 type Details={node_id:number;node_name:string;protocol_version:number;online:boolean;config:Config;generation:number;status:Status;status_received_at:string|null}
 const id=location.pathname.match(/^\/admin\/nodes\/([1-9]\d*)\/ddns$/)?.[1]
 const data=ref<Details|null>(null),busy=ref(false),initialized=ref(false)
-const form=reactive<Config>({enabled:false,provider:'cloudflare',record_name:'',zone_id:'',token:'',ipv4:true,ipv6:false,interval_seconds:300,ttl:300,ipv4_url:'https://api.ipify.org',ipv6_url:'https://api6.ipify.org',ip_source:'api',ignore_private_ips:true,use_for_ingress:true,use_for_egress:true})
+const form=reactive<Config>({enabled:false,provider:'cloudflare',record_name:'',zone_id:'',key_id:'',token:'',ipv4:true,ipv6:false,interval_seconds:300,ttl:300,ipv4_url:'https://api.ipify.org',ipv6_url:'https://api6.ipify.org',ip_source:'api',ignore_private_ips:true,use_for_ingress:true,use_for_egress:true})
 const {me,loading,error,refresh}=usePage(async()=>{if(!id)throw Error('节点地址无效');data.value=await api<Details>(`admin/nodes/${id}/ddns`);if(!initialized.value){Object.assign(form,data.value.config);initialized.value=true}},{admin:true,interval:5000})
+// Free Alibaba Cloud DNS and DNSPod plans need TTL >= 600; Cloudflare defaults to 300.
+watch(()=>form.provider,(next,prev)=>{if(!initialized.value||!prev||next===prev)return;if(next!=='cloudflare'&&(form.ttl===300||form.ttl===1))form.ttl=600;else if(next==='cloudflare'&&form.ttl===600)form.ttl=300},{flush:'sync'})
+const managed=computed(()=>form.provider!=='cloudflare')
+const credentials=computed(()=>({
+ cloudflare:{key:'',credName:'Cloudflare API Token',credHint:'对应区域的 DNS 编辑 Token',zone:'Zone ID',zoneTip:'留空自动识别（需要 Zone 读取权限）'},
+ alidns:{key:'AccessKey ID',credName:'AccessKey Secret',credHint:'建议使用仅授权 AliyunDNSFullAccess 的 RAM 子账号',zone:'主域名',zoneTip:'例如 example.com；留空自动识别'},
+ dnspod:{key:'DNSPod ID',credName:'DNSPod Token',credHint:'DNSPod 控制台「API 密钥」中的 Token；也可直接粘贴 ID,Token',zone:'主域名',zoneTip:'例如 example.com；留空自动识别'},
+})[form.provider])
 const states:Record<string,string>={disabled:'已关闭',pending:'等待节点更新',ok:'已同步',error:'更新失败',partial:'部分同步'}
 const time=(unix?:number)=>unix?new Date(unix*1000).toLocaleString():'—'
 async function save(){busy.value=true;try{await api(`admin/nodes/${id}/ddns`,'PUT',form);await refresh();ElMessage.success('DDNS 配置已保存并下发')}catch(e){ElMessage.error((e as Error).message)}finally{busy.value=false}}
@@ -24,18 +33,20 @@ async function update(){busy.value=true;try{await api(`admin/nodes/${id}/ddns/ru
    <div class="section-body settings-form">
     <el-alert v-if="data && data.protocol_version<8" title="此节点需要升级到 Agent v0.9.0 或以上才能运行 DDNS。" type="warning" :closable="false"/>
     <el-alert v-if="data && form.ip_source==='interface' && data.protocol_version<30" title="请先升级节点端，再使用通过网卡获取 IP。" type="warning" :closable="false"/>
+    <el-alert v-if="data && managed && data.protocol_version<37" title="请先升级节点端，再使用阿里云或 DNSPod DDNS。" type="warning" :closable="false"/>
     <el-form label-position="top" @submit.prevent="save">
      <el-form-item label="启用 DDNS"><el-switch v-model="form.enabled"/></el-form-item>
-     <div class="form-grid"><el-form-item label="DNS 服务商"><el-select v-model="form.provider"><el-option label="Cloudflare" value="cloudflare"/></el-select></el-form-item><el-form-item label="记录域名"><el-input v-model="form.record_name" placeholder="node.example.com"/></el-form-item></div>
-     <el-form-item label="Cloudflare API Token"><el-input v-model="form.token" type="password" show-password autocomplete="off" placeholder="对应区域的 DNS 编辑 Token"/></el-form-item>
-     <el-form-item label="Zone ID"><el-input v-model="form.zone_id" placeholder="留空自动识别（需要 Zone 读取权限）"/></el-form-item>
+     <div class="form-grid"><el-form-item label="DNS 服务商"><el-select v-model="form.provider"><el-option label="Cloudflare" value="cloudflare"/><el-option label="阿里云 DNS" value="alidns"/><el-option label="DNSPod" value="dnspod"/></el-select></el-form-item><el-form-item label="记录域名"><el-input v-model="form.record_name" placeholder="node.example.com"/></el-form-item></div>
+     <el-form-item v-if="managed" :label="credentials.key"><el-input v-model="form.key_id" autocomplete="off"/></el-form-item>
+     <el-form-item :label="credentials.credName"><el-input v-model="form.token" type="password" show-password autocomplete="off" :placeholder="credentials.credHint"/></el-form-item>
+     <el-form-item :label="credentials.zone"><el-input v-model="form.zone_id" :placeholder="credentials.zoneTip"/></el-form-item>
      <el-form-item label="IP 类型"><el-checkbox v-model="form.ipv4">IPv4 / A</el-checkbox><el-checkbox v-model="form.ipv6">IPv6 / AAAA</el-checkbox></el-form-item>
      <el-form-item label="IP 获取方式"><el-select v-model="form.ip_source"><el-option label="通过公网 API 查询" value="api"/><el-option label="通过网卡获取" value="interface"/></el-select></el-form-item>
      <el-form-item v-if="form.ip_source==='interface'"><el-checkbox v-model="form.ignore_private_ips">忽略内网 IP 和回环地址</el-checkbox><span class="field-tip">优先选择已启用网卡的公网地址；取消勾选后允许使用内网或回环地址。</span></el-form-item>
-     <div class="form-grid"><el-form-item label="检查间隔 / 秒"><el-input-number v-model="form.interval_seconds" :min="60" :max="86400"/></el-form-item><el-form-item label="DNS TTL / 秒"><el-input-number v-model="form.ttl" :min="1" :max="86400"/><span class="field-tip">1 为自动；其余为 60–86400。</span></el-form-item></div>
+     <div class="form-grid"><el-form-item label="检查间隔 / 秒"><el-input-number v-model="form.interval_seconds" :min="60" :max="86400"/></el-form-item><el-form-item label="DNS TTL / 秒"><el-input-number v-model="form.ttl" :min="1" :max="86400"/><span class="field-tip">{{managed?'1 为自动（600）；免费版最低 600。':'1 为自动；其余为 60–86400。'}}</span></el-form-item></div>
      <template v-if="form.ip_source==='api'"><el-form-item v-if="form.ipv4" label="IPv4 获取地址"><el-input v-model="form.ipv4_url"/></el-form-item><el-form-item v-if="form.ipv6" label="IPv6 获取地址"><el-input v-model="form.ipv6_url"/></el-form-item></template>
      <el-form-item label="使用此域名"><el-checkbox v-model="form.use_for_ingress">节点公网地址</el-checkbox><el-checkbox v-model="form.use_for_egress">隧道出口地址</el-checkbox></el-form-item>
-     <p class="field-tip">节点按所选方式获取 IP 并更新记录，使用仅 DNS 模式；不存在时自动创建 A/AAAA 记录。</p>
+     <p class="field-tip">节点按所选方式获取 IP 并更新记录{{managed?'（默认线路）':'，使用仅 DNS 模式'}}；不存在时自动创建 A/AAAA 记录。</p>
     </el-form>
    </div>
   </section>

@@ -28,3 +28,31 @@ func TestConfigValidation(t *testing.T) {
 		t.Fatal("disabled initial config rejected")
 	}
 }
+
+func TestManagedProviderConfigValidation(t *testing.T) {
+	ali := Config{Enabled: true, Provider: ProviderAliDNS, RecordName: "node.example.com", ZoneID: "Example.com.", KeyID: "LTAIfixture", Token: "fixture-secret", IPv4: true}
+	if err := ali.Normalize(); err != nil || ali.ZoneID != "example.com" || ali.TTL != 600 {
+		t.Fatalf("aliyun config: %v %+v", err, ali)
+	}
+	pod := Config{Enabled: true, Provider: ProviderDNSPod, RecordName: "example.com", Token: "12345,fixturetoken", IPv4: true}
+	if err := pod.Normalize(); err != nil || pod.KeyID != "12345" || pod.Token != "fixturetoken" {
+		t.Fatalf("dnspod pasted login token: %v %+v", err, pod)
+	}
+	cf := DefaultConfig()
+	cf.KeyID = "leftover"
+	if cf.Normalize() != nil || cf.KeyID != "" {
+		t.Fatal("Cloudflare kept an unused key ID")
+	}
+	for _, change := range []func(*Config){
+		func(c *Config) { c.KeyID = "" }, func(c *Config) { c.KeyID = "bad id" },
+		func(c *Config) { c.ZoneID = "other.com" }, func(c *Config) { c.ZoneID = "not a domain" },
+		func(c *Config) { c.Provider = ProviderDNSPod; c.KeyID = "abc" },
+		func(c *Config) { c.Provider = ProviderDNSPod; c.Token = "a,b" },
+	} {
+		c := Config{Enabled: true, Provider: ProviderAliDNS, RecordName: "node.example.com", KeyID: "12345", Token: "fixture", IPv4: true}
+		change(&c)
+		if c.Normalize() == nil {
+			t.Fatalf("invalid managed config accepted: %+v", c)
+		}
+	}
+}
