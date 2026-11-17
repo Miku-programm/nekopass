@@ -10,6 +10,10 @@
 
 在入口配置勾选「禁止用户在此节点创建 UDP 入站规则」，可限制新增、复制、导入及迁入的 UDP 规则。已有 UDP 规则仍可编辑、暂停和恢复，节点作为 UDP 出口不受影响。默认不勾选。
 
+## Mux 多路复用
+
+raw(tcp)、raw(udp) 的多路复用在「编辑传输协议 → 多路复用 Mux」设置，详见 [raw(tcp)](../protocols/plain-tcp.md#mux-多路复用) 和 [raw(udp)](../protocols/raw-udp.md#mux-多路复用)。h2、HTTP/3 使用各自已有的连接池。
+
 ## 节点带宽与 Brutal
 
 在节点编辑主窗口填写上行、下行带宽，单位 Mbps：上行为节点发送，下行为节点接收，`0` 表示未填写。
@@ -76,7 +80,7 @@ CPU、内存和硬盘直接显示使用率趋势图，磁盘 I/O 在同一张图
 
 自动检测国内 IP 连通性并调用小助理换 IP，见 [自动换 IP](./ip-recovery.md)。配置入口也在节点列表的操作按钮中。
 
-在节点列表的「安装命令」「编辑」旁点击「DDNS」。支持 Cloudflare、阿里云 DNS 和 DNSPod，由节点获取 IP 并创建或更新 A / AAAA 记录；Cloudflare 使用仅 DNS 模式，阿里云和 DNSPod 使用默认线路。阿里云和 DNSPod 需要节点协议版本 34 或以上，旧节点请先升级。
+在节点列表的「安装命令」「编辑」旁点击「DDNS」。支持 Cloudflare、阿里云 DNS 和 DNSPod，由节点获取 IP 并创建或更新 A / AAAA 记录；Cloudflare 使用仅 DNS 模式，阿里云和 DNSPod 使用默认线路。阿里云和 DNSPod 需要节点协议版本 37 或以上，旧节点请先升级。
 
 | 设置 | 用途 |
 | --- | --- |

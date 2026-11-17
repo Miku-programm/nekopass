@@ -33,7 +33,7 @@ async function update(){busy.value=true;try{await api(`admin/nodes/${id}/ddns/ru
    <div class="section-body settings-form">
     <el-alert v-if="data && data.protocol_version<8" title="此节点需要升级到 Agent v0.9.0 或以上才能运行 DDNS。" type="warning" :closable="false"/>
     <el-alert v-if="data && form.ip_source==='interface' && data.protocol_version<30" title="请先升级节点端，再使用通过网卡获取 IP。" type="warning" :closable="false"/>
-    <el-alert v-if="data && managed && data.protocol_version<34" title="请先升级节点端，再使用阿里云或 DNSPod DDNS。" type="warning" :closable="false"/>
+    <el-alert v-if="data && managed && data.protocol_version<37" title="请先升级节点端，再使用阿里云或 DNSPod DDNS。" type="warning" :closable="false"/>
     <el-form label-position="top" @submit.prevent="save">
      <el-form-item label="启用 DDNS"><el-switch v-model="form.enabled"/></el-form-item>
      <div class="form-grid"><el-form-item label="DNS 服务商"><el-select v-model="form.provider"><el-option label="Cloudflare" value="cloudflare"/><el-option label="阿里云 DNS" value="alidns"/><el-option label="DNSPod" value="dnspod"/></el-select></el-form-item><el-form-item label="记录域名"><el-input v-model="form.record_name" placeholder="node.example.com"/></el-form-item></div>

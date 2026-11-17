@@ -1,7 +1,10 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, watchEffect } from 'vue'
 import type { Me } from './api'
-const props = defineProps<{ me: Me | null; loading: boolean; error: string; active: string; admin?: boolean }>()
+import { pendingTickets } from './shell-state'
+const props = defineProps<{ me: Me | null; loading: boolean; error: string; active: string; admin?: boolean; pendingTickets?: number }>()
+// Pages that know the waiting-ticket count publish it to the persistent sidebar.
+watchEffect(() => { if (props.pendingTickets !== undefined) pendingTickets.value = props.pendingTickets })
 const allowed = computed(() => !!props.me && (!props.admin || props.me.is_admin))
 </script>
 <template>
