@@ -236,6 +236,7 @@ message DDNSConfig {
  string ipv6_url = 12;
  string ip_source = 13;
  bool ignore_private_ips = 14;
+ string key_id = 15;
 }
 message DDNSStatus {
  int64 generation = 1;

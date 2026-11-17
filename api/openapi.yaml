@@ -418,7 +418,7 @@ paths:
         '403': {$ref: '#/components/responses/Error'}
         '404': {$ref: '#/components/responses/Error'}
     put:
-      summary: Administrator only; save Cloudflare DDNS and push to this node
+      summary: Administrator only; save Cloudflare, Alibaba Cloud DNS or DNSPod DDNS and push to this node
       requestBody:
         required: true
         content:
@@ -427,14 +427,15 @@ paths:
               type: object
               properties:
                 enabled: {type: boolean, default: false}
-                provider: {type: string, enum: [cloudflare]}
+                provider: {type: string, enum: [cloudflare, alidns, dnspod], default: cloudflare, description: alidns and dnspod require Agent protocol 34 or newer}
                 record_name: {type: string, example: node.example.com}
-                token: {type: string, description: Cloudflare API token with DNS Edit permission}
-                zone_id: {type: string, description: '32 hex characters; blank discovers automatically and requires Zone Read permission'}
+                key_id: {type: string, description: 'alidns AccessKey ID or dnspod token ID; ignored for cloudflare'}
+                token: {type: string, description: 'Cloudflare API token with DNS Edit permission, alidns AccessKey Secret, or DNSPod token (dnspod also accepts "ID,Token" with key_id blank)'}
+                zone_id: {type: string, description: 'cloudflare: 32 hex characters; alidns / dnspod: main domain such as example.com. Blank discovers automatically (Cloudflare then requires Zone Read permission)'}
                 ipv4: {type: boolean, default: true}
                 ipv6: {type: boolean, default: false}
                 interval_seconds: {type: integer, minimum: 60, maximum: 86400, default: 300}
-                ttl: {type: integer, description: '1 for automatic or 60–86400 seconds', default: 300}
+                ttl: {type: integer, description: '1 for automatic or 60–86400 seconds; alidns / dnspod map 1 to 600 and free plans require at least 600', default: 300}
                 ipv4_url: {type: string, default: 'https://api.ipify.org'}
                 ipv6_url: {type: string, default: 'https://api6.ipify.org'}
                 ip_source: {type: string, enum: [api, interface], default: api, description: Interface discovery requires Agent protocol 30 or newer}
@@ -445,7 +446,7 @@ paths:
         '200': {description: 'generation; state pending until Agent protocol 8 or newer reports. Enabled address binding replaces selected node addresses with record_name. Disabling preserves records and node addresses.'}
         '400': {$ref: '#/components/responses/Error'}
         '403': {$ref: '#/components/responses/Error'}
-        '409': {description: Upgrade the agent before enabling interface discovery}
+        '409': {description: Upgrade the agent before enabling interface discovery or alidns / dnspod}
   /admin/nodes/{id}/ddns/run:
     parameters:
       - {name: id, in: path, required: true, schema: {type: integer, format: int64, minimum: 1}}

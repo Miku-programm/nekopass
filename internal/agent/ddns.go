@@ -40,7 +40,7 @@ func (e *Engine) configureDDNS(config *pb.DDNSConfig) {
 }
 
 func ddnsConfiguration(c *pb.DDNSConfig) ddns.Config {
-	return ddns.Config{Enabled: c.Enabled, Provider: c.Provider, RecordName: c.RecordName, ZoneID: c.ZoneId, Token: c.Token, IPv4: c.Ipv4, IPv6: c.Ipv6, IntervalSeconds: int(c.IntervalSeconds), TTL: int(c.Ttl), IPv4URL: c.Ipv4Url, IPv6URL: c.Ipv6Url, IPSource: c.IpSource, IgnorePrivateIPs: c.IgnorePrivateIps}
+	return ddns.Config{Enabled: c.Enabled, Provider: c.Provider, RecordName: c.RecordName, ZoneID: c.ZoneId, KeyID: c.KeyId, Token: c.Token, IPv4: c.Ipv4, IPv6: c.Ipv6, IntervalSeconds: int(c.IntervalSeconds), TTL: int(c.Ttl), IPv4URL: c.Ipv4Url, IPv6URL: c.Ipv6Url, IPSource: c.IpSource, IgnorePrivateIPs: c.IgnorePrivateIps}
 }
 
 func (e *Engine) publishDDNS(ctx context.Context, status *pb.DDNSStatus) {
