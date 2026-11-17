@@ -16,10 +16,12 @@ import (
 )
 
 type Client struct {
-	APIBase string
-	API     *http.Client
-	IPv4    *http.Client
-	IPv6    *http.Client
+	APIBase    string
+	AliyunBase string
+	DNSPodBase string
+	API        *http.Client
+	IPv4       *http.Client
+	IPv6       *http.Client
 	// InterfaceIPs may override OS discovery, for example in integration tests.
 	InterfaceIPs func() ([]netip.Addr, error)
 }
@@ -34,7 +36,7 @@ func NewClient() *Client {
 		}
 		return &http.Client{Transport: transport, Timeout: 15 * time.Second, CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }}
 	}
-	return &Client{APIBase: "https://api.cloudflare.com/client/v4", API: client("tcp"), IPv4: client("tcp4"), IPv6: client("tcp6")}
+	return &Client{APIBase: "https://api.cloudflare.com/client/v4", AliyunBase: "https://alidns.aliyuncs.com", DNSPodBase: "https://dnsapi.cn", API: client("tcp"), IPv4: client("tcp4"), IPv6: client("tcp6")}
 }
 
 func (c *Client) Close() {
@@ -155,7 +157,7 @@ func (c *Client) request(ctx context.Context, method, path, token string, payloa
 	return nil
 }
 
-func (c *Client) Zone(ctx context.Context, cfg Config) (string, error) {
+func (c *Client) cloudflareZone(ctx context.Context, cfg Config) (string, error) {
 	if cfg.ZoneID != "" {
 		return cfg.ZoneID, nil
 	}
@@ -176,7 +178,7 @@ func (c *Client) Zone(ctx context.Context, cfg Config) (string, error) {
 	return "", errors.New("找不到 Cloudflare 域名区域，请检查 Zone ID 或 Zone 读取权限")
 }
 
-func (c *Client) Sync(ctx context.Context, cfg Config, zone, kind, address string) (bool, error) {
+func (c *Client) cloudflareSync(ctx context.Context, cfg Config, zone, kind, address string) (bool, error) {
 	query := url.Values{"type": {kind}, "name": {cfg.RecordName}, "per_page": {"100"}}
 	var records []struct {
 		ID      string `json:"id"`

@@ -89,6 +89,19 @@ export function createDemoAPI(options: DemoOptions = {}) {
     if (/^(admin\/)?tickets\/1$/.test(resource)) return result({...data.ticket,messages:data.ticketMessages,total:data.ticketMessages.length})
     if (resource === 'admin/settings') return result({settings:data.settings,api_key_configured:false,agent_listener:null,telegram_status:{state:'disabled'}})
     if (resource === 'admin/updates/panel') return result({supported:false,current_version:'frontend-demo',task:null})
+    if (resource === 'admin/dashboard') {
+      const range = (['24h','7d','30d'] as const).find(value => value === url.searchParams.get('range')) ?? '24h'
+      const points = range === '24h' ? 24 : range === '7d' ? 28 : 30, step = range === '24h' ? 3600_000 : range === '7d' ? 6 * 3600_000 : 86400_000
+      const end = Math.floor(Date.now() / step) * step
+      const wave = (index: number, base: number) => Math.round(base * (1 + Math.sin(index * .55) * .4))
+      const online = data.nodes.filter(node => node.enabled && node.online).length
+      return result({generated_at:new Date().toISOString(),timezone:'Asia/Shanghai',range,unit:range === '24h' ? 'mbps' : 'bytes',
+        stats:{users:data.users.length,new_users:1,nodes:data.nodes.length,enabled_nodes:data.nodes.filter(node => node.enabled).length,online_nodes:online,offline_nodes:data.nodes.filter(node => node.enabled).length-online,rules:data.rules.length,connections:12,recharge_cents:10000,recharge_orders:1,waiting_tickets:1,high_tickets:0,medium_tickets:1,low_tickets:0,today_rx:3_221_225_472,today_tx:1_288_490_188,traffic_ready:true},
+        traffic:Array.from({length:points},(_,index)=>({at:Math.floor((end-(points-1-index)*step)/1000),rx:wave(index,range === '24h' ? 42 : 9_663_676_416),tx:wave(index+2,range === '24h' ? 17 : 3_865_470_566)})),
+        nodes:data.nodes.map(node => ({id:node.id,name:node.name,enabled:node.enabled,online:node.online,metrics:null,history:[]})),
+        orders:data.orders.map(order => ({id:order.id,order_no:order.order_no,user_id:order.user_id,username:order.username,kind:order.kind,amount_cents:order.amount_cents,status:order.status,created_at:order.created_at})),
+        host:null})
+    }
     if (resource === 'admin/updates') throw Error('演示环境未连接版本服务，无法检查服务器更新。')
     if (resource === 'admin/payment-methods') return result(paginate([{id:1,name:'演示支付（停用）',interface:'epay',config:{},enabled:false,sort_order:0}],50))
     if (resource === 'admin/payment-interfaces') return result([{id:'epay',name:'易支付',fields:[{name:'url',label:'接口地址',placeholder:'https://pay.example.invalid',secret:false,required:true},{name:'pid',label:'商户 ID',placeholder:'仅展示表单',secret:false,required:true},{name:'key',label:'商户密钥',placeholder:'无需填写真实密钥',secret:true,required:true}]}])
@@ -98,7 +111,7 @@ export function createDemoAPI(options: DemoOptions = {}) {
       if (!node) throw Error('演示节点不存在。')
       const common = {node_id:node.id,node_name:node.name,protocol_version:19,online:node.online,generation:1,status:{state:'disabled'},status_received_at:data.date}
       if (nodeEndpoint[2] === 'protocols') return result({...common,config:node,ingress_nodes:data.nodes})
-      if (nodeEndpoint[2] === 'ddns') return result({...common,config:{enabled:false,provider:'cloudflare',record_name:'',zone_id:'',token:'',ipv4:true,ipv6:false,interval_seconds:300,ttl:300,ipv4_url:'',ipv6_url:'',use_for_ingress:true,use_for_egress:true}})
+      if (nodeEndpoint[2] === 'ddns') return result({...common,config:{enabled:false,provider:'cloudflare',record_name:'',zone_id:'',key_id:'',token:'',ipv4:true,ipv6:false,interval_seconds:300,ttl:300,ipv4_url:'',ipv6_url:'',use_for_ingress:true,use_for_egress:true}})
       if (nodeEndpoint[2] === 'ip-recovery') return result({...common,config:{enabled:false,target_ip:'',failure_threshold:6,cooldown_seconds:300,instance_type:'ec2',auth_token:'',share_group_token:'',account_id:'',region_name:'',instance_id:'',static_ip:false}})
       return result({tls_only:false,inbounds:[{id:1,config:{name:'共享 TLS（演示）',port:443,enabled:true,proxy_accept:'off',allowed_sni:['*.example.invalid'],reject_empty_sni:true,unknown_sni_action:'reject',default_rule_id:0,max_handshakes:128,handshake_timeout_seconds:5},rule_count:0}],default_rules:[]})
     }

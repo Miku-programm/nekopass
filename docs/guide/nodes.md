@@ -10,6 +10,10 @@
 
 在入口配置勾选「禁止用户在此节点创建 UDP 入站规则」，可限制新增、复制、导入及迁入的 UDP 规则。已有 UDP 规则仍可编辑、暂停和恢复，节点作为 UDP 出口不受影响。默认不勾选。
 
+## Mux 多路复用
+
+raw(tcp)、raw(udp) 的多路复用在「编辑传输协议 → 多路复用 Mux」设置，详见 [raw(tcp)](../protocols/plain-tcp.md#mux-多路复用) 和 [raw(udp)](../protocols/raw-udp.md#mux-多路复用)。h2、HTTP/3 使用各自已有的连接池。
+
 ## 节点带宽与 Brutal
 
 在节点编辑主窗口填写上行、下行带宽，单位 Mbps：上行为节点发送，下行为节点接收，`0` 表示未填写。
@@ -76,24 +80,27 @@ CPU、内存和硬盘直接显示使用率趋势图，磁盘 I/O 在同一张图
 
 自动检测国内 IP 连通性并调用小助理换 IP，见 [自动换 IP](./ip-recovery.md)。配置入口也在节点列表的操作按钮中。
 
-在节点列表的「安装命令」「编辑」旁点击「DDNS」。当前支持 Cloudflare，由节点获取 IP 并创建或更新 A / AAAA 记录，使用仅 DNS 模式。
+在节点列表的「安装命令」「编辑」旁点击「DDNS」。支持 Cloudflare、阿里云 DNS 和 DNSPod，由节点获取 IP 并创建或更新 A / AAAA 记录；Cloudflare 使用仅 DNS 模式，阿里云和 DNSPod 使用默认线路。阿里云和 DNSPod 需要节点协议版本 37 或以上，旧节点请先升级。
 
 | 设置 | 用途 |
 | --- | --- |
 | 记录域名 | 完整域名，不含协议、端口或通配符。 |
-| API Token | 需要所在区域的 DNS 编辑权限。 |
-| Zone ID | 可留空自动识别，此时 Token 还需 Zone 读取权限。 |
+| DNS 服务商 | Cloudflare、阿里云 DNS 或 DNSPod。 |
+| 凭据 | Cloudflare：API Token，需要所在区域的 DNS 编辑权限。阿里云：AccessKey ID 与 AccessKey Secret，建议使用仅授权 `AliyunDNSFullAccess` 的 RAM 子账号。DNSPod：DNSPod 控制台「API 密钥」中的 ID 与 Token，也可在 Token 栏直接粘贴 `ID,Token`。 |
+| Zone ID / 主域名 | 可留空自动识别。Cloudflare 填 32 位 Zone ID，留空时 Token 还需 Zone 读取权限；阿里云和 DNSPod 填主域名，如 `example.com`。 |
 | IP 类型 | 至少选择 IPv4 或 IPv6。 |
 | IP 获取方式 | 默认通过公网 API 查询，也可选择从节点已启用的网卡获取。 |
 | 忽略内网 IP 和回环地址 | 仅网卡方式显示，默认勾选；取消后允许使用内网或回环地址。 |
 | 检查间隔 | 默认 300 秒，可填 60–86400。 |
-| DNS TTL | 默认 300 秒，`1` 为自动，其余 60–86400。 |
+| DNS TTL | Cloudflare 默认 300 秒，阿里云和 DNSPod 默认 600 秒；`1` 为自动（阿里云和 DNSPod 按 600 处理），其余 60–86400。阿里云和 DNSPod 免费版最低 600。 |
 | IP 获取地址 | 仅公网 API 方式显示，填写返回纯文本公网 IP 的 HTTPS 地址，可分别配置 IPv4 / IPv6。 |
 | 使用此域名 | 可同时或分别替换节点公网地址、隧道出口地址。 |
 
 网卡方式优先选择公网地址，其次为内网地址，最后为回环地址；同类地址按 IP 排序选择。每个 IP 类型使用一个地址，链路本地地址不参与选择。NAT 后的服务器可使用公网 API 获取其公网出口地址。
 
 获取 IPv4 / IPv6 失败时，间隔 1 秒重试，最多尝试 3 次；三次均失败才上报错误，已开启的 Telegram 通知随后发送失败消息。
+
+同名记录有多条时，阿里云和 DNSPod 只更新默认线路的记录；默认线路仍有多条则报错，不会改动。记录被暂停时同样报错，请先在服务商控制台启用。
 
 同步结果与「立即更新」都在 DDNS 页。停用后停止更新，已有记录和节点地址保留。DDNS 不修改 TLS 的 SNI 或证书；证书域名仍需单独配置。
 

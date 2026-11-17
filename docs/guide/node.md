@@ -116,7 +116,7 @@ wget https://github.com/Miku-programm/nekopass/releases/latest/download/uninstal
 
 ## 动态 IP / DDNS
 
-在节点列表点击「DDNS」，配置 Cloudflare、记录域名、IPv4 / IPv6 和同步参数。完整设置见 [节点与节点组](./nodes.md#ddns)。
+在节点列表点击「DDNS」，配置 Cloudflare / 阿里云 DNS / DNSPod、记录域名、IPv4 / IPv6 和同步参数。完整设置见 [节点与节点组](./nodes.md#ddns)。
 
 ## 入口、出口与传输协议
 

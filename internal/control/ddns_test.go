@@ -235,3 +235,31 @@ func TestDDNSInterfaceSourceDeliveryAndReports(t *testing.T) {
 	apply(&pb.DDNSStatus{Generation: generation + 2, State: "ok", Ipv4: "127.0.0.1", CheckedUnix: 103}, false)
 	apply(&pb.DDNSStatus{Generation: generation + 2, State: "ok", Ipv4: "203.0.113.7", CheckedUnix: 104}, true)
 }
+
+func TestDDNSManagedProvidersRequireUpgradedAgent(t *testing.T) {
+	f := newSecurityFixture(t)
+	ctx := context.Background()
+	var node int64
+	if err := f.p.QueryRow(ctx, "INSERT INTO nodes(name,token_hash,protocol_version) VALUES($1,$2,$3) RETURNING id", Secret(), Secret(), pb.DDNSProviderVersion-1).Scan(&node); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _, _ = f.p.Exec(ctx, "DELETE FROM nodes WHERE id=$1", node) })
+	path := fmt.Sprintf("admin/nodes/%d/ddns", node)
+	cfg := ddns.Config{Enabled: true, Provider: ddns.ProviderAliDNS, RecordName: "node.example.test", ZoneID: "example.test", KeyID: "LTAIfixture", Token: "fixture-secret", IPv4: true}
+	securityStatus(t, f.request(f.admin, path, "PUT", cfg), 409)
+	if _, err := f.p.Exec(ctx, "UPDATE nodes SET protocol_version=$2 WHERE id=$1", node, pb.CurrentVersion); err != nil {
+		t.Fatal(err)
+	}
+	securityStatus(t, f.request(f.admin, path, "PUT", cfg), 200)
+	stream := &StreamServer{Server: f.s}
+	instance := Secret()
+	out, err := stream.exchange(ctx, f.p, node, &pb.AgentMessage{InstanceId: instance, ProtocolVersion: pb.CurrentVersion})
+	if err != nil || out.Node.Ddns == nil || !out.Node.Ddns.Enabled || out.Node.Ddns.Provider != ddns.ProviderAliDNS || out.Node.Ddns.KeyId != "LTAIfixture" || out.Node.Ddns.ZoneId != "example.test" || out.Node.Ddns.Ttl != 600 {
+		t.Fatalf("aliyun configuration not delivered: %v %+v", err, out.GetNode().GetDdns())
+	}
+	// A downgraded agent would reject the provider; keep it disabled instead.
+	out, err = stream.exchange(ctx, f.p, node, &pb.AgentMessage{InstanceId: instance, ProtocolVersion: pb.DDNSProviderVersion - 1})
+	if err != nil || out.Node.Ddns == nil || out.Node.Ddns.Enabled {
+		t.Fatalf("legacy agent received an unsupported provider: %v", err)
+	}
+}

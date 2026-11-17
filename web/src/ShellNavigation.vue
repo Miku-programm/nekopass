@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, useId } from 'vue'
 import Icon from './Icon.vue'
+import { pendingTickets } from './shell-state'
 
 const props = defineProps<{ active: string; admin?: boolean; isAdmin: boolean }>()
 defineEmits<{ navigate: [] }>()
@@ -37,7 +38,7 @@ function activeAdmin(key: string) { return !!props.admin && props.active === key
   <template v-if="isAdmin">
    <button class="admin-nav-toggle" type="button" :aria-expanded="adminOpen" :aria-controls="adminMenuId" @click="adminOpen = !adminOpen"><Icon name="settings" /><span>管理</span><Icon name="chevron" class="nav-chevron" :class="{ expanded: adminOpen }" /></button>
    <div v-show="adminOpen" :id="adminMenuId" class="admin-nav-links">
-    <a v-for="item in adminLinks" :key="item.path" :href="item.path" :class="{ active: activeAdmin(item.key) }" :aria-current="activeAdmin(item.key) ? 'page' : undefined" @click="$emit('navigate')"><Icon :name="item.icon" /><span>{{ item.label }}</span></a>
+    <a v-for="item in adminLinks" :key="item.path" :href="item.path" :class="{ active: activeAdmin(item.key) }" :aria-current="activeAdmin(item.key) ? 'page' : undefined" @click="$emit('navigate')"><Icon :name="item.icon" /><span>{{ item.label }}</span><span v-if="item.key==='tickets' && pendingTickets" class="sidebar-pending-count">{{ pendingTickets > 99 ? '99+' : pendingTickets }}</span></a>
    </div>
   </template>
  </nav>

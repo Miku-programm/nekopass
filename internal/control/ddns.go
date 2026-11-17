@@ -96,6 +96,10 @@ func (s *Server) saveNodeDDNS(w http.ResponseWriter, r *http.Request) {
 		fail(w, 409, "请先升级节点端，再使用通过网卡获取 IP")
 		return
 	}
+	if cfg.Enabled && cfg.Provider != ddns.ProviderCloudflare && version < pb.DDNSProviderVersion {
+		fail(w, 409, "请先升级节点端，再使用"+ddns.ProviderName(cfg.Provider)+" DDNS")
+		return
+	}
 	data, _ := json.Marshal(cfg)
 	state := "disabled"
 	if cfg.Enabled {
@@ -171,8 +175,9 @@ func appendDDNSControl(ctx context.Context, tx pgx.Tx, node int64, out *pb.Contr
 		return err
 	}
 	// Older agents ignore unknown protobuf fields and would silently use the API.
-	compatible := cfg.IPSource != ddns.IPSourceInterface || version >= pb.DDNSInterfaceVersion
-	out.Node.Ddns = &pb.DDNSConfig{Enabled: cfg.Enabled && compatible, Generation: generation, Provider: cfg.Provider, RecordName: cfg.RecordName, ZoneId: cfg.ZoneID, Token: cfg.Token, Ipv4: cfg.IPv4, Ipv6: cfg.IPv6, IntervalSeconds: int32(cfg.IntervalSeconds), Ttl: int32(cfg.TTL), Ipv4Url: cfg.IPv4URL, Ipv6Url: cfg.IPv6URL, IpSource: cfg.IPSource, IgnorePrivateIps: cfg.IgnorePrivateIPs}
+	compatible := (cfg.IPSource != ddns.IPSourceInterface || version >= pb.DDNSInterfaceVersion) &&
+		(cfg.Provider == ddns.ProviderCloudflare || version >= pb.DDNSProviderVersion)
+	out.Node.Ddns = &pb.DDNSConfig{Enabled: cfg.Enabled && compatible, Generation: generation, Provider: cfg.Provider, RecordName: cfg.RecordName, ZoneId: cfg.ZoneID, KeyId: cfg.KeyID, Token: cfg.Token, Ipv4: cfg.IPv4, Ipv6: cfg.IPv6, IntervalSeconds: int32(cfg.IntervalSeconds), Ttl: int32(cfg.TTL), Ipv4Url: cfg.IPv4URL, Ipv6Url: cfg.IPv6URL, IpSource: cfg.IPSource, IgnorePrivateIps: cfg.IgnorePrivateIPs}
 	return nil
 }
 
